@@ -1,0 +1,16 @@
+.env
+.env.local
+**/node_modules/
+**/dist/
+**/target/
+**/data/
+*.log
+playwright-report/
+test-results/
+
+.tools/
+backups/
+secrets/
+
+__pycache__/
+*.pyc

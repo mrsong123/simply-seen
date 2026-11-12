@@ -1,0 +1,18 @@
+{
+  "pages": [
+    {
+      "path": "pages/index/index",
+      "style": {
+        "navigationBarTitleText": "素见好物",
+        "navigationBarBackgroundColor": "#f8f9f4",
+        "navigationBarTextStyle": "black",
+        "enablePullDownRefresh": true
+      }
+    }
+  ],
+  "globalStyle": {
+    "backgroundColor": "#f6f7f1",
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "素见好物"
+  }
+}

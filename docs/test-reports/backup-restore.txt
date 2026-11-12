@@ -1,0 +1,4 @@
+MySQL 8.4 isolated validation database
+Logical SQL content before backup and after restore: identical
+Normalized SHA-256: 0906639108cd27dd44e137044eba12769d082cbe18edf38fe1453d198686d52b
+Production RPO/RTO not measured.

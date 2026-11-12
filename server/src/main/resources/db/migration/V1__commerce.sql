@@ -1,0 +1,37 @@
+CREATE TABLE member (id BIGINT PRIMARY KEY, openid VARCHAR(128) UNIQUE, name VARCHAR(80) NOT NULL, invite_code VARCHAR(24) NOT NULL UNIQUE, inviter_id BIGINT, points BIGINT NOT NULL DEFAULT 0, points_held BIGINT NOT NULL DEFAULT 0, available BIGINT NOT NULL DEFAULT 0, reserved BIGINT NOT NULL DEFAULT 0, debt BIGINT NOT NULL DEFAULT 0, promoter BOOLEAN NOT NULL DEFAULT FALSE, blocked BOOLEAN NOT NULL DEFAULT FALSE, created_at BIGINT NOT NULL, CHECK(points>=0 AND points_held>=0 AND available>=0 AND reserved>=0 AND debt>=0));
+CREATE TABLE admin_account (id BIGINT PRIMARY KEY, username VARCHAR(80) UNIQUE NOT NULL, password_hash VARCHAR(100) NOT NULL, role VARCHAR(20) NOT NULL, active BOOLEAN NOT NULL DEFAULT TRUE);
+CREATE TABLE session_token (token_hash VARCHAR(64) PRIMARY KEY, actor_id BIGINT NOT NULL, kind VARCHAR(10) NOT NULL, expires_at BIGINT NOT NULL);
+CREATE TABLE category (id BIGINT PRIMARY KEY, name VARCHAR(80) NOT NULL, sort_no INT NOT NULL DEFAULT 0);
+CREATE TABLE product (id BIGINT PRIMARY KEY, category_id BIGINT NOT NULL, name VARCHAR(120) NOT NULL, subtitle VARCHAR(240) NOT NULL, description TEXT NOT NULL, image VARCHAR(1000) NOT NULL, color VARCHAR(20) NOT NULL, status VARCHAR(20) NOT NULL, featured BOOLEAN NOT NULL DEFAULT FALSE, points_percent INT NOT NULL DEFAULT 0, commission_percent INT NOT NULL DEFAULT 0, created_at BIGINT NOT NULL, CHECK(points_percent BETWEEN 0 AND 100),CHECK(commission_percent BETWEEN 0 AND 30));
+CREATE TABLE sku (id BIGINT PRIMARY KEY, product_id BIGINT NOT NULL, name VARCHAR(100) NOT NULL, code VARCHAR(80) UNIQUE NOT NULL, price BIGINT NOT NULL, cost BIGINT NOT NULL, stock INT NOT NULL, held INT NOT NULL DEFAULT 0, version INT NOT NULL DEFAULT 0, CHECK(price>0 AND cost>=0 AND stock>=0 AND held>=0));
+CREATE TABLE address (id BIGINT PRIMARY KEY, member_id BIGINT NOT NULL, name VARCHAR(60) NOT NULL, phone VARCHAR(30) NOT NULL, region VARCHAR(160) NOT NULL, detail VARCHAR(240) NOT NULL, is_default BOOLEAN NOT NULL DEFAULT FALSE);
+CREATE TABLE cart_item (member_id BIGINT NOT NULL, sku_id BIGINT NOT NULL, quantity INT NOT NULL, PRIMARY KEY(member_id,sku_id));
+CREATE TABLE rule_version (id BIGINT PRIMARY KEY, state VARCHAR(20) NOT NULL, config TEXT NOT NULL, creator BIGINT NOT NULL, reviewer BIGINT, created_at BIGINT NOT NULL);
+CREATE TABLE quote (id VARCHAR(40) PRIMARY KEY, member_id BIGINT NOT NULL, address_id BIGINT NOT NULL, payload TEXT NOT NULL, expires_at BIGINT NOT NULL);
+CREATE TABLE shop_order (id VARCHAR(40) PRIMARY KEY, member_id BIGINT NOT NULL, state VARCHAR(30) NOT NULL, payment_state VARCHAR(30) NOT NULL, item_amount BIGINT NOT NULL, freight BIGINT NOT NULL, points_used BIGINT NOT NULL, cash_due BIGINT NOT NULL, cash_refunded BIGINT NOT NULL DEFAULT 0, points_refunded BIGINT NOT NULL DEFAULT 0, address_snapshot TEXT NOT NULL, rule_snapshot TEXT NOT NULL, remark VARCHAR(240) NOT NULL, transaction_id VARCHAR(100) UNIQUE, expires_at BIGINT NOT NULL, created_at BIGINT NOT NULL, paid_at BIGINT, completed_at BIGINT, carrier VARCHAR(80), tracking_no VARCHAR(100));
+CREATE TABLE order_item (id BIGINT PRIMARY KEY, order_id VARCHAR(40) NOT NULL, sku_id BIGINT NOT NULL, product_id BIGINT NOT NULL, name VARCHAR(180) NOT NULL, image VARCHAR(1000) NOT NULL, quantity INT NOT NULL, unit_price BIGINT NOT NULL, cost BIGINT NOT NULL, cash_amount BIGINT NOT NULL, points_amount BIGINT NOT NULL, commission_percent INT NOT NULL, refunded_quantity INT NOT NULL DEFAULT 0, refunded_cash BIGINT NOT NULL DEFAULT 0, refunded_points BIGINT NOT NULL DEFAULT 0);
+CREATE TABLE ledger (id BIGINT PRIMARY KEY, member_id BIGINT NOT NULL, event_key VARCHAR(160) NOT NULL UNIQUE, asset VARCHAR(20) NOT NULL, amount BIGINT NOT NULL, balance BIGINT NOT NULL, order_id VARCHAR(40), note VARCHAR(240) NOT NULL, created_at BIGINT NOT NULL);
+CREATE TABLE commission (id BIGINT PRIMARY KEY, order_id VARCHAR(40) NOT NULL, beneficiary_id BIGINT NOT NULL, buyer_id BIGINT NOT NULL, level_no INT NOT NULL, amount BIGINT NOT NULL, original_amount BIGINT NOT NULL, state VARCHAR(20) NOT NULL, rule_snapshot TEXT NOT NULL, settled_at BIGINT, created_at BIGINT NOT NULL, UNIQUE(order_id,level_no));
+CREATE TABLE refund (id VARCHAR(40) PRIMARY KEY, order_id VARCHAR(40) NOT NULL, member_id BIGINT NOT NULL, state VARCHAR(30) NOT NULL, amount BIGINT NOT NULL, points BIGINT NOT NULL, line_snapshot TEXT NOT NULL, reason VARCHAR(240) NOT NULL, creator BIGINT NOT NULL, reviewer BIGINT, channel_id VARCHAR(100), created_at BIGINT NOT NULL);
+CREATE TABLE withdrawal (id VARCHAR(40) PRIMARY KEY, member_id BIGINT NOT NULL, gross BIGINT NOT NULL, tax BIGINT NOT NULL, net BIGINT NOT NULL, state VARCHAR(30) NOT NULL, reviewer BIGINT, executor BIGINT, channel_id VARCHAR(100), package_info TEXT, reason VARCHAR(240), created_at BIGINT NOT NULL);
+CREATE TABLE outbox (id VARCHAR(80) PRIMARY KEY, kind VARCHAR(30) NOT NULL, aggregate_id VARCHAR(40) NOT NULL, state VARCHAR(20) NOT NULL, attempts INT NOT NULL DEFAULT 0, next_at BIGINT NOT NULL, last_error VARCHAR(240), created_at BIGINT NOT NULL);
+CREATE TABLE idempotency (scope_key VARCHAR(200) PRIMARY KEY, payload_hash VARCHAR(64) NOT NULL, response TEXT NOT NULL, created_at BIGINT NOT NULL);
+CREATE TABLE audit (id BIGINT PRIMARY KEY, actor_id BIGINT NOT NULL, action VARCHAR(80) NOT NULL, resource VARCHAR(100) NOT NULL, detail TEXT NOT NULL, created_at BIGINT NOT NULL);
+CREATE TABLE issue (id BIGINT PRIMARY KEY, kind VARCHAR(60) NOT NULL, resource VARCHAR(100) NOT NULL, detail TEXT NOT NULL, state VARCHAR(20) NOT NULL, created_at BIGINT NOT NULL, UNIQUE(kind,resource));
+CREATE TABLE settlement (id BIGINT PRIMARY KEY, period VARCHAR(7) NOT NULL UNIQUE, state VARCHAR(20) NOT NULL, budget BIGINT NOT NULL, creator BIGINT NOT NULL, reviewer BIGINT, created_at BIGINT NOT NULL);
+CREATE TABLE settlement_award (id BIGINT PRIMARY KEY, settlement_id BIGINT NOT NULL, member_id BIGINT NOT NULL, sales BIGINT NOT NULL, amount BIGINT NOT NULL, rank_no INT NOT NULL, UNIQUE(settlement_id,member_id));
+CREATE TABLE reconcile_batch (id BIGINT PRIMARY KEY, period_day VARCHAR(10) NOT NULL, orders_total BIGINT NOT NULL, refunds_total BIGINT NOT NULL, transfers_total BIGINT NOT NULL, diff_count INT NOT NULL, created_at BIGINT NOT NULL);
+CREATE TABLE rate_limit (bucket VARCHAR(160) PRIMARY KEY, hits INT NOT NULL, window_at BIGINT NOT NULL);
+CREATE INDEX idx_order_member ON shop_order(member_id,created_at);
+CREATE INDEX idx_order_expire ON shop_order(state,expires_at);
+CREATE INDEX idx_ledger_member ON ledger(member_id,created_at);
+CREATE INDEX idx_outbox_work ON outbox(state,next_at);
+CREATE INDEX idx_commission_beneficiary ON commission(beneficiary_id,state);
+CREATE INDEX idx_member_inviter ON member(inviter_id);
+
+CREATE TABLE system_guard (scope_key VARCHAR(40) PRIMARY KEY);
+INSERT INTO system_guard VALUES('COMMISSION');
+INSERT INTO system_guard VALUES('RULE');
+
+CREATE TABLE id_allocator (scope_key VARCHAR(30) PRIMARY KEY, next_id BIGINT NOT NULL);
+INSERT INTO id_allocator VALUES('GLOBAL',1000000);

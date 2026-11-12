@@ -1,0 +1,4 @@
+Final Docker/Nginx/Java deployment browser validation
+  ✓  1 tests/commerce.spec.ts:7:1 › customer purchase, payment, fulfillment, refund and administration (20.5s)
+  ✓  2 tests/commerce.spec.ts:169:1 › mobile storefront has no horizontal overflow and navigation works (1.6s)
+  2 passed (24.1s)

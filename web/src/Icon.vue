@@ -1,0 +1,81 @@
+<script setup lang="ts">
+import {
+  ArrowRight,
+  ArrowLeft,
+  ChevronDown,
+  ChevronRight,
+  Plus,
+  Minus,
+  X,
+  Search,
+  ShoppingBag,
+  User,
+  Heart,
+  Check,
+  Menu,
+  Package,
+  Truck,
+  Wallet,
+  Gift,
+  Share2,
+  Settings,
+  LayoutDashboard,
+  Users,
+  FileText,
+  Shield,
+  RefreshCw,
+  LogOut,
+  Download,
+  Leaf,
+  CircleHelp,
+  MapPin,
+  SlidersHorizontal,
+  CheckCircle2,
+  Clock,
+  Copy,
+} from "lucide-vue-next";
+const icons: any = {
+  ArrowRight,
+  ArrowLeft,
+  ChevronDown,
+  ChevronRight,
+  Plus,
+  Minus,
+  X,
+  Search,
+  ShoppingBag,
+  User,
+  Heart,
+  Check,
+  Menu,
+  Package,
+  Truck,
+  Wallet,
+  Gift,
+  Share2,
+  Settings,
+  LayoutDashboard,
+  Users,
+  FileText,
+  Shield,
+  RefreshCw,
+  LogOut,
+  Download,
+  Leaf,
+  CircleHelp,
+  MapPin,
+  SlidersHorizontal,
+  CheckCircle2,
+  Clock,
+  Copy,
+};
+defineProps<{ name: string; size?: number }>();
+</script>
+<template>
+  <component
+    :is="icons[name] || CircleHelp"
+    :size="size || 20"
+    :stroke-width="1.5"
+    aria-hidden="true"
+  />
+</template>
