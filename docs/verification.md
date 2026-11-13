@@ -22,6 +22,16 @@
 
 容器第一次试运行发现构建文件权限过严导致非root进程无法读取JAR，已修复Docker COPY权限并重建；最终容器验收通过。MySQL测试发现保留字段名冲突，已修复并从空库重新验证。环境内npm原生子进程和浏览器需正常命令沙箱升级运行，不是通过关闭TLS或校验解决。
 
+## Java 21 编译器兼容性修复
+
+默认编译器改为完整JDK21提供的`javac`，原ECJ配置移到只可显式启用的`cloud-ecj` profile，避免IDE将项目默认导入为Eclipse编译器。已分别执行：
+
+- 官方Temurin21 JDK镜像内，默认profile的`clean verify`：确认主代码和测试代码均由`javac [release 21]`编译，22项测试全部通过，JAR打包成功。
+- JRE21云环境内，`-Pcloud-ecj clean verify`：确认ECJ按release21编译，22项测试全部通过，JAR打包成功。
+- 默认构建的class文件major version为65，确认为Java21目标。
+
+证据见`docs/test-reports/java21-compilers.txt`。原文中的“Java21可运行JAR构建”现同时有两条编译路径验证。用户本地IDE仍需使用完整JDK21，并将其保留的旧Eclipse编译器选择改为Javac；具体步骤见`docs/development.md`。没有声称已在用户的本机IDE中执行重建。
+
 ## 后端关键断言
 
 - 同一幂等请求只生成一笔订单；同键不同内容拒绝，报价消费后不能另键重复使用。

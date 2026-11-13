@@ -4,7 +4,9 @@
 
 ## 运行
 
-要求 Java 21、Node 22.12+、Python 3、curl。Maven wrapper 固定3.9.11并校验SHA-512；Java编译使用固定版本Eclipse编译器，在仅有JRE21的环境也能构建。
+要求完整 JDK 21（包含 `javac`）、Node 22.12+、Python 3、curl。Maven wrapper 固定3.9.11并校验SHA-512；默认使用 JDK 自带的 `javac` 编译，目标版本固定为 Java 21。仅有 JRE 21 的云环境可以显式使用 `-Pcloud-ecj`，本地 IDE 不要启用该 profile。
+
+IntelliJ IDEA 请将 Project SDK、模块 SDK 和 Maven JDK 设为完整 JDK 21，并在 `Settings → Build, Execution, Deployment → Compiler → Java Compiler` 中选择 `Javac`。如果曾导入旧版本，修改 POM 后仍需检查 IDE 是否保留了 `Eclipse` 编译器选择。详见[Java 21 本地构建与IDE配置](docs/development.md)。
 
 ```bash
 python3 scripts/dev-env.py
