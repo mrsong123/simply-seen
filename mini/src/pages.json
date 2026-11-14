@@ -57,6 +57,20 @@
       }
     },
     {
+      "path": "pages/account/security",
+      "style": {
+        "navigationBarTitleText": "账户与安全",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/account/identity",
+      "style": {
+        "navigationBarTitleText": "实名认证",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
       "path": "pages/addresses/index",
       "style": {
         "navigationBarTitleText": "收货地址",

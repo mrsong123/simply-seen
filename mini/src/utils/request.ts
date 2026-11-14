@@ -14,6 +14,7 @@ interface Envelope<T> {
 }
 export interface RequestOptions extends AxiosRequestConfig {
   idempotencyKey?: string;
+  anonymous?: boolean;
 }
 export class RequestError extends Error {
   readonly notified = true;
@@ -79,7 +80,9 @@ const client = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 client.interceptors.request.use((config) => {
-  const token = authStorage.token();
+  const token = (config as typeof config & { anonymous?: boolean }).anonymous
+    ? ""
+    : authStorage.token();
   if (token) config.headers.set("Authorization", "Bearer " + token);
   return config;
 });
@@ -101,7 +104,14 @@ client.interceptors.response.use(
     return response;
   },
   (error: AxiosError<Envelope<unknown>>) => {
-    if (error.response?.status === 401) {
+    if (
+      error.response?.status === 401 &&
+      !(
+        error.config as
+          | (AxiosRequestConfig & { anonymous?: boolean })
+          | undefined
+      )?.anonymous
+    ) {
       authStorage.clear();
       uni.$emit("session-expired");
     }

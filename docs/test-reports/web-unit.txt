@@ -1,9 +1,13 @@
 2026-11-14: web unit tests
- ✓ tests/unit/checkout.test.ts (3 tests) 14ms
- ✓ tests/unit/configuration.test.ts (3 tests) 15ms
- ✓ tests/unit/request.test.ts (5 tests) 39ms
- ✓ tests/unit/guards.test.ts (7 tests) 12ms
- ✓ tests/unit/admin-credentials.test.ts (3 tests) 7ms
- Test Files  5 passed (5)
-      Tests  21 passed (21)
-   Duration  977ms (transform 394ms, setup 0ms, collect 931ms, tests 87ms, environment 1ms, prepare 476ms)
+ ✓ tests/unit/identity-retry.test.ts (2 tests) 15ms
+ ✓ tests/unit/phone-challenge.test.ts (3 tests) 29ms
+ ✓ tests/unit/request.test.ts (6 tests) 104ms
+ ✓ tests/unit/configuration.test.ts (3 tests) 23ms
+ ✓ tests/unit/account-profile.test.ts (2 tests) 47ms
+ ✓ tests/unit/checkout.test.ts (3 tests) 55ms
+ ✓ tests/unit/guards.test.ts (7 tests) 19ms
+ ✓ tests/unit/account-security.test.ts (11 tests) 13ms
+ ✓ tests/unit/admin-credentials.test.ts (3 tests) 17ms
+ Test Files  9 passed (9)
+      Tests  40 passed (40)
+   Duration  3.49s (transform 807ms, setup 0ms, collect 3.47s, tests 321ms, environment 3ms, prepare 1.89s)

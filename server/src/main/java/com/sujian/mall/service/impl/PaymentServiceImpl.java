@@ -92,6 +92,14 @@ public class PaymentServiceImpl implements PaymentService {
         "ORDER_STATE",
         "订单已支付或已过期");
     if (c.dev()) return Map.of("mode", "DEVELOPMENT", "orderNo", no);
+    String openid =
+        s(
+            com.sujian.mall.common.Rows.required(memberMapper.selectAccountById(uid)),
+            "openid");
+    Problem.require(
+        !openid.isBlank() && !openid.startsWith("dev:"),
+        "WECHAT_BINDING_REQUIRED",
+        "请在小程序使用同一手机号登录并绑定微信后支付");
     tx.executeWithoutResult(
         t -> {
           var locked =
@@ -102,12 +110,7 @@ public class PaymentServiceImpl implements PaymentService {
               "订单不可支付");
           shopOrderMapper.markPrepay(no);
         });
-    var result =
-        w.prepay(
-            o,
-            s(
-                com.sujian.mall.common.Rows.required(memberMapper.selectOpenidByMemberId(uid)),
-                "openid"));
+    var result = w.prepay(o, openid);
     shopOrderMapper.markPrepayIfUnconfirmed(no);
     return result;
   }

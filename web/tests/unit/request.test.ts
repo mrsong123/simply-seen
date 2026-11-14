@@ -115,6 +115,43 @@ describe("Axios request wrapper", () => {
     expect(useUiStore(pinia).error).toBe("登录失效");
     expect(useUiStore(pinia).pending).toBe(0);
   });
+  it("does not clear a new member session when the previous session returns a late 401", async () => {
+    const auth = useAuthStore(pinia);
+    auth.saveSession("member", {
+      token: "old-test-session",
+      kind: "MEMBER",
+      profile: { id: 1 },
+    });
+    await expect(
+      request.get("/me", {
+        adapter: async (config) => {
+          expect(config.headers.get("Authorization")).toBe(
+            "Bearer old-test-session",
+          );
+          auth.saveSession("member", {
+            token: "new-test-session",
+            kind: "MEMBER",
+            profile: { id: 2 },
+          });
+          throw new AxiosError(
+            "Unauthorized",
+            "ERR_BAD_REQUEST",
+            config,
+            {},
+            response(
+              config,
+              { code: "AUTH_REQUIRED", message: "原会话已失效" },
+              401,
+            ),
+          );
+        },
+      }),
+    ).rejects.toMatchObject({ status: 401 });
+    expect(auth.member?.token).toBe("new-test-session");
+    expect(auth.memberProfile?.id).toBe(2);
+    expect(useUiStore(pinia).error).toBe("");
+    expect(useUiStore(pinia).pending).toBe(0);
+  });
   it("does not treat a 200 business failure as successful data", async () => {
     await expect(
       request.post(

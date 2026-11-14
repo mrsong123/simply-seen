@@ -45,7 +45,7 @@ public interface MemberMapper extends BaseMapper<Member> {
 
   @Insert(
       "INSERT INTO member(id,openid,name,invite_code,inviter_id,created_at)"
-          + " VALUES(#{id},#{openid},#{name},#{inviteCode},#{inviterId},#{createdAt})")
+          + " VALUES(#{id},#{openid,jdbcType=VARCHAR},#{name},#{inviteCode},#{inviterId},#{createdAt})")
   int insertRegisteredMember(
       @Param("id") long id,
       @Param("openid") String openid,
@@ -53,6 +53,10 @@ public interface MemberMapper extends BaseMapper<Member> {
       @Param("inviteCode") String inviteCode,
       @Param("inviterId") Long inviterId,
       @Param("createdAt") long createdAt);
+
+  @Update("UPDATE member SET openid=#{openid} WHERE id=#{id}"
+      + " AND (openid IS NULL OR openid LIKE 'dev:%')")
+  int bindWechatOpenid(@Param("id") long id, @Param("openid") String openid);
 
   @Select(
       "SELECT"
@@ -75,7 +79,7 @@ public interface MemberMapper extends BaseMapper<Member> {
   @Select("SELECT * FROM member WHERE id=#{id} FOR UPDATE")
   Map<String, Object> lockAccountById(@Param("id") long id);
 
-  @Select("SELECT openid FROM member WHERE id=#{id}")
+  @Select("SELECT id,openid FROM member WHERE id=#{id}")
   Map<String, Object> selectOpenidByMemberId(@Param("id") long id);
 
   @Select("SELECT * FROM member ORDER BY id")

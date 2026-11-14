@@ -8,7 +8,7 @@
 HTTP → controller → service接口 → service.impl → mapper → entity/数据库
                                   ↓
                               integration
-job → service接口                 微信 / 物流
+job → service接口                 微信 / 物流 / 短信 / 实名
 ```
 
 - `controller`按商品、账号、会员、订单、营销、财务拆分，只负责HTTP入参、DTO校验、身份检查和响应，不直接依赖Mapper或外部集成实现。
@@ -17,7 +17,7 @@ job → service接口                 微信 / 物流
 - `entity`为真实表实体，声明MyBatis-Plus表名、字段和主键；普通分类CRUD、商品实体读取、地址归属删除等调用继承的BaseMapper方法。
 - `mapper`集中数据库查询与写入。库存锁、账户锁、支付幂等、预算与对账等SQL明确写在领域Mapper/Provider；服务层没有SQL字符串或通用raw-SQL网关。
 - `cart_item`有`(member_id, sku_id)`复合主键，使用明确同时校验两列的Mapper操作，避免伪装成MyBatis-Plus不支持的单列`xxById`操作。
-- `integration`隔离微信签名、请求、回调解密及物流协议；由业务服务调用。`job`只触发对应Service，不承担资金规则。
+- `integration`隔离微信签名、请求、回调解密、物流、阿里云短信及实名协议；由业务服务调用。`job`只触发对应Service，不承担资金规则。
 - `common`集中JSON、异常、Row投影、ID号段等基础能力。ID号段通过独立MyBatis会话提交，避免占用业务连接池或因事务回滚复用号段。
 - `config`集中Mapper扫描、事务、HTTP、安全配置、启动校验、local演示种子和私有初始凭据策略。Flyway是数据库版本化入口。
 
@@ -54,6 +54,10 @@ MySQL是真实来源，local使用H2。货币始终为人民币整数分，积�
 余额只通过带来源的追加账本变更，可重建核对；后台没有任意改余额入口。佣金仍按订单规则快照、真实净现金、毛利及预算计算，退款按原分摊逆向；已出款不足冲回记追偿，不写负可用余额。经办人与财务/执行人分离的约束由服务端强制执行。
 
 ## local 与 prod
+
+手机验证码、会员手机号绑定和实名认证各有独立Controller/DTO/Service/Mapper/Entity。短信挑战只存HMAC摘要并独立记录失败计数，消费先提交；手机号注册/绑定在领域锁和唯一指纹约束下处理，不跨账户合并资产。实名外调位于数据库事务外，状态通过租约及当前尝试号更新，显式匹配后才占用唯一证件指纹。
+
+短信和实名的Aliyun RPC适配位于integration，共享签名与HTTPS传输。敏感手机号、姓名、身份证采用AES-256-GCM随机nonce加密；不同用途指纹使用独立HMAC上下文。服务端profile及前端状态只包含脱敏字段，日志不记录原始请求。生产提现强制真实实名和微信绑定，开发模式的认证与验证码不能在生产升级为真实凭据。
 
 默认local直接启动，使用H2和明确标记的演示数据；未提供管理员口令且没有已有管理员时，生成私有随机凭据文件，日志只给绝对路径。已有账号不重置。
 

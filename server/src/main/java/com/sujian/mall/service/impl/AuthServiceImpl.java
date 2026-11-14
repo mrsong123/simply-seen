@@ -23,6 +23,14 @@ public class AuthServiceImpl implements AuthService {
   @org.springframework.beans.factory.annotation.Autowired
   private SessionTokenMapper sessionTokenMapper;
 
+  @org.springframework.beans.factory.annotation.Autowired private MemberPhoneMapper memberPhoneMapper;
+
+  @org.springframework.beans.factory.annotation.Autowired private IdentityService identities;
+
+  @org.springframework.beans.factory.annotation.Autowired private AccountSecurityLockMapper accountLocks;
+
+  @org.springframework.beans.factory.annotation.Autowired private AccountDataProtection protection;
+
   private final BusinessSupport d;
   private final Settings c;
   private final WechatClient w;
@@ -113,6 +121,9 @@ public class AuthServiceImpl implements AuthService {
 
   private Map<String, Object> loginOpenid(String openid, String invite) {
     Problem.require(!openid.isBlank(), "WX_LOGIN_FAILED", "微信登录失败");
+    String lockKey = protection.fingerprint("wechat-account", openid);
+    accountLocks.ensure(lockKey);
+    accountLocks.lock(lockKey);
     if (memberMapper.countByOpenid(openid) > 0) {
       var m = com.sujian.mall.common.Rows.required(memberMapper.selectByOpenid(openid));
       Problem.require(!b(m, "blocked"), "ACCOUNT_DISABLED", "账号已停用");
@@ -142,7 +153,16 @@ public class AuthServiceImpl implements AuthService {
   }
 
   public Map<String, Object> profile(long id) {
-    return com.sujian.mall.common.Rows.required(memberMapper.selectPublicProfile(id));
+    var profile = new LinkedHashMap<String, Object>(Rows.required(memberMapper.selectPublicProfile(id)));
+    var phone = memberPhoneMapper.selectById(id);
+    profile.put("phoneBound", phone != null);
+    profile.put("phoneMasked", phone == null ? "" : phone.getPhoneMasked());
+    String openid = s(Rows.required(memberMapper.selectOpenidByMemberId(id)), "openid");
+    profile.put("wechatBound", !openid.isBlank() && !openid.startsWith("dev:"));
+    var identity = identities.status(id);
+    profile.put("identityStatus", identity.get("status"));
+    profile.put("identityDevelopment", Boolean.TRUE.equals(identity.get("development")));
+    return profile;
   }
 
   @Transactional

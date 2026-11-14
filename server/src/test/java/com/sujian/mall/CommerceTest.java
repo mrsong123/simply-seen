@@ -34,6 +34,7 @@ class CommerceTest {
         public String get(String key, String fallback) {
           return switch (key) {
             case "APP_DEV_MODE" -> "true";
+            case "IDENTITY_REQUIRED_FOR_WITHDRAWAL" -> "false";
             case "ADMIN_BOOTSTRAP_PASSWORD" -> "test-only-password-2026";
             default -> super.get(key, fallback);
           };
@@ -63,6 +64,13 @@ class CommerceTest {
         t -> {
           for (String table :
               List.of(
+                  "member_phone",
+                  "sms_challenge",
+                  "sms_throttle",
+                  "sms_cooldown",
+                  "account_security_lock",
+                  "member_identity",
+                  "identity_attempt",
                   "reconcile_batch",
                   "settlement_award",
                   "settlement",

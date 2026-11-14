@@ -31,6 +31,36 @@ IDE直接运行使用Spring的local默认配置和Run Configuration环境变量�
 | WITHDRAW_MIN_FEN / WITHDRAW_MAX_FEN | 单次税前提现范围，默认1000至200000分。最大额必须符合实际开通的转账场景条件 |
 | JAVA_OPTS | 本地运行脚本的JVM参数，例如内存、受信证书库；不能将密钥值放到命令行参数 |
 
+## 手机验证码登录与姓名/身份证核验
+
+网页与小程序均支持中国大陆手机号验证码登录，首次验证成功自动注册。已有微信会员应先通过微信登录并绑定手机号，随后可使用该号码登录原账户；系统不会合并两个已有账户的订单、资金和邀请关系。
+
+| 变量 | 用途与要求 |
+|---|---|
+| SMS_PROVIDER | 生产为aliyun；local未配置时为development，返回明确标记的本次随机测试码，生产不能使用该模式 |
+| SMS_API_URL | 阿里云短信RPC HTTPS端点，示例`https://dysmsapi.aliyuncs.com/`，不带查询参数或密钥 |
+| SMS_ACCESS_KEY_ID / SMS_ACCESS_KEY_SECRET | 有SendSms权限的阿里云RAM凭据，仅服务端使用 |
+| SMS_REGION_ID | API区域参数，示例cn-hangzhou，显式填写 |
+| SMS_SIGN_NAME | 已审核的短信签名 |
+| SMS_TEMPLATE_CODE | 已审核的验证码模板，模板变量使用code |
+| SMS_DAILY_LIMIT | 系统每日短信预算上限，默认1000条，必须为正整数；手机及IP限制另行生效 |
+| IDENTITY_PROVIDER | 生产为aliyun；local默认development，仅模拟信息核验，不能作为生产实名结果 |
+| IDENTITY_API_URL | 阿里云实名认证RPC HTTPS端点，示例`https://cloudauth.aliyuncs.com/` |
+| IDENTITY_ACCESS_KEY_ID / IDENTITY_ACCESS_KEY_SECRET | 已开通Id2MetaVerify产品及其权限的RAM凭据 |
+| IDENTITY_REGION_ID | API区域参数，示例cn-hangzhou，显式填写 |
+| IDENTITY_MAX_ATTEMPTS_PER_DAY | 每会员每天最大核验次数，默认5，上限10，重复查询同一次处理中请求不重复调用渠道 |
+| IDENTITY_PENDING_TTL_SECONDS | 处理中请求租约，默认120秒，范围60至600秒；超时保留未知事实，再显式重试 |
+| IDENTITY_RETRY_AFTER_SECONDS | 失败后再次核验的冷却，默认60秒，范围30至300秒 |
+| ACCOUNT_DATA_KEY | Base64编码的32字节安全随机密钥，用于AES-256-GCM加密及独立上下文HMAC指纹；生产必填，不能下发前端 |
+| ACCOUNT_DATA_KEY_PATH | local未配置密钥时生成并复用的私有文件，默认data/account-data.key；生产不自动生成密钥 |
+| IDENTITY_REQUIRED_FOR_WITHDRAWAL | 默认true；生产始终强制实名，不能通过false绕过。false仅供隔离开发及历史财务回归测试 |
+
+短信验证码有效期300秒，重发冷却60秒，最多5次错误；消费后不能再次使用。手机每小时最多5条、每日10条；IP每分钟最多3条、每小时20条，并受系统日预算限制。验证码只保存带密钥的摘要，不记录到日志；本地开发码仅通过development响应下发并明确显示，生产拒绝消费开发模式生成的验证码。
+
+真实姓名及身份证号在服务端加密保存，客户端只读取脱敏信息和状态。实名认证使用姓名和18位大陆居民身份证二要素匹配，需要用户明确同意；不包含人脸活体核验，也不能由此证明微信收款人与填写的身份证是同一个人。只有渠道明确匹配才通过，超时或异常不能作为通过依据。开发模拟结果不能用于生产提现；生产提现还要求绑定真实微信身份。
+
+`ACCOUNT_DATA_KEY`必须在重启、扩容和恢复时保持一致，并与数据库备份分开安全保存。丢失或直接更换它会导致历史密文无法解密、手机号及证件指纹无法匹配；更换需先制定受控数据迁移方案，不能每次部署生成新值。不要在聊天、截图、日志或Git中提供凭据及实际姓名/证件资料。
+
 ## 微信登录、支付与商家转账
 
 | 变量 | 配置内容 |
@@ -62,7 +92,7 @@ IDE直接运行使用Spring的local默认配置和Run Configuration环境变量�
 | API_PROXY_TARGET | Vite本地代理的服务端地址，例如`http://127.0.0.1:8080`；仅本地开发使用 |
 | WEB_PORT | 本地Vite端口，默认5173 |
 
-生产网页消费者授权在微信小程序完成；网页保留商品公开浏览，开发环境提供明确标记的测试身份登录。管理后台在网页正常登录。
+生产网页支持公开浏览及手机验证码登录。当前支付渠道为微信小程序支付，手机账户应在小程序以同一手机号登录并绑定微信，再完成支付/提现；网页不会伪造可用的微信JSAPI能力。已有微信用户先在原微信账户绑定手机号，避免重复创建账户。管理后台继续使用独立账号和密码。
 
 ## 小程序（mini/.env.local，构建时读取）
 
@@ -82,6 +112,7 @@ IDE直接运行使用Spring的local默认配置和Run Configuration环境变量�
 | MYSQL_DATABASE / MYSQL_USER / MYSQL_PASSWORD | 初始化库及应用账号，需与JDBC配置一致 |
 | WEB_BIND | 反向代理绑定，例如`127.0.0.1:8088`，避免绕过外层HTTPS入口 |
 | API_UPSTREAM_URL | Nginx到服务端的内部基址，例如`http://server:8080` |
+| TRUSTED_PROXY_CIDR | Nginx可采信客户端IP的外层代理来源CIDR，默认127.0.0.1/32；按实际边缘代理地址填写，不可用0.0.0.0/0。Nginx重写X-Forwarded-For并清除客户端Forwarded，避免伪造来源绕过短信限流 |
 | BACKUP_DIR | 备份脚本输出目录，应为受控加密挂载 |
 | RESTORE_FILE / RESTORE_CONFIRMED | 恢复文件及人工确认标记YES；仅恢复脚本读取 |
 | SUJIAN_TOOLS_DIR | Maven wrapper缓存目录，可选，默认项目.tools |
@@ -89,7 +120,7 @@ IDE直接运行使用Spring的local默认配置和Run Configuration环境变量�
 | E2E_ADMIN_USERNAME / E2E_ADMIN_PASSWORD | 浏览器验收可显式提供管理账号，优先于本地文件；不要写入测试报告或Git |
 | TEST_DATABASE_URL | 集成测试目标；只允许专用可清空测试库，测试会删除业务表内数据 |
 
-网络目标：包管理源、微信登录域名、商户支付域名，以及自有API与素材域名。已有环境只放行包管理源时，应在环境设置添加`api.weixin.qq.com`、`api.mch.weixin.qq.com`及实际自有域名。配置文件保存不会证明这些域名已被当前运行实例放行。
+网络目标：包管理源、微信登录域名、商户支付域名、短信与实名认证端点，以及自有API与素材域名。已有环境只放行包管理源时，应在环境设置添加`api.weixin.qq.com`、`api.mch.weixin.qq.com`、`dysmsapi.aliyuncs.com`、`cloudauth.aliyuncs.com`及实际自有域名。配置文件保存不会证明这些域名已被当前运行实例放行。
 
 ## 物流轨迹（快递100实时查询协议）
 

@@ -111,7 +111,31 @@ def smoke(java, jar, result_file):
             assert len(credentials["password"]) >= 24
             assert credentials["password"] not in log.read_text(), "Bootstrap password leaked to logs"
             admin = call(base, "/auth/admin", "POST", credentials)["token"]
-            member = call(base, "/auth/dev", "POST", {"name": "LocalSmoke" + uuid.uuid4().hex[:8]})["token"]
+            legacy = call(base, "/auth/dev", "POST", {"name": "LocalSmoke" + uuid.uuid4().hex[:8]})
+            binding = call(base, "/me/phone/code", "POST", {"phone": "13700000001"}, legacy["token"])
+            bound = call(base, "/me/phone", "POST", {
+                "phone": "13700000001", "code": binding["devCode"],
+                "challengeId": binding["challengeId"],
+            }, legacy["token"])
+            assert bound["id"] == legacy["profile"]["id"] and bound["phoneBound"]
+            challenge = call(base, "/auth/phone/code", "POST", {"phone": "13800000001"})
+            assert challenge["development"] and len(challenge["devCode"]) == 6
+            login_body = {"phone": "13800000001", "code": challenge["devCode"],
+                          "challengeId": challenge["challengeId"], "accepted": True}
+            session = call(base, "/auth/phone", "POST", login_body)
+            member = session["token"]
+            assert session["profile"]["phoneBound"] and not session["profile"]["wechatBound"]
+            replay_code = call(base, "/auth/phone", "POST", login_body, status=400)
+            assert replay_code["code"] == "SMS_CODE_USED", f"Unexpected code rejection: {replay_code.get('code')}"
+            identity_gate = call(base, "/me/withdrawals", "POST", {"amountFen": 1000},
+                                 member, uuid.uuid4().hex, status=409)
+            assert identity_gate["code"] == "IDENTITY_REQUIRED"
+            identity = call(base, "/me/identity", "POST", {
+                "name": "开发验收", "idNumber": "11010519491231002X", "accepted": True,
+            }, member)
+            assert identity["status"] == "VERIFIED" and identity["development"]
+            assert identity["idNumberMasked"] != "11010519491231002X"
+            original_data_key = (workdir / "data/account-data.key").read_bytes()
             call(base, "/admin/orders", token=member, status=403)
             product = call(base, "/products")[0]
             sku = call(base, "/products/" + str(product["id"]))["skus"][0]
@@ -156,6 +180,10 @@ def smoke(java, jar, result_file):
             base = ready(process, port, log)
             assert credentials_path.read_bytes() == original_credentials, "Restart reset local credentials"
             call(base, "/auth/admin", "POST", credentials)
+            assert (workdir / "data/account-data.key").read_bytes() == original_data_key
+            profile = call(base, "/me", token=member)
+            assert profile["id"] == session["profile"]["id"] and profile["phoneBound"]
+            assert call(base, "/me/identity", token=member)["status"] == "VERIFIED"
         finally:
             stop(process, stream)
         production_env = {**environment, "SPRING_PROFILES_ACTIVE": "prod", "APP_DEV_MODE": "false"}
@@ -168,6 +196,9 @@ def smoke(java, jar, result_file):
     summary = (
         "Clean local profile: ready without .env or merchant credentials\n"
         "Private random bootstrap credentials: created, not logged, stable after restart\n"
+        "Phone authentication: auto-register, single-use code, original-account phone binding: passed\n"
+        "Identity: explicit development verification, masked fields, withdrawal gate: passed\n"
+        "Private account encryption key and identity/profile: stable after restart\n"
         "Real HTTP: login, permission rejection, address, quote, idempotent order, development pay, "
         "shipment, receipt, refund: passed\n"
         "Production without required configuration: startup rejected\n"

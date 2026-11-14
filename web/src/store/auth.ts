@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import { authApi } from "@/api/auth";
+import type { PhoneLogin } from "@/types/account";
 import {
   readSession,
   persistSession,
@@ -37,6 +38,9 @@ export const useAuthStore = defineStore("auth", {
         this.adminValidated = false;
       }
     },
+    async loginPhone(body: PhoneLogin) {
+      this.saveSession("member", await authApi.loginPhone(body));
+    },
     async loginMember(body: { name: string; inviteCode: string }) {
       this.saveSession("member", await authApi.loginDev(body));
     },
@@ -44,8 +48,11 @@ export const useAuthStore = defineStore("auth", {
       this.saveSession("admin", await authApi.loginAdmin(body));
     },
     async fetchMemberProfile() {
-      if (!this.member) return null;
-      this.memberProfile = await authApi.getMember();
+      const token = this.member?.token;
+      if (!token) return null;
+      const profile = await authApi.getMember();
+      if (this.member?.token !== token) return null;
+      this.memberProfile = profile;
       return this.memberProfile;
     },
     async fetchAdminProfile() {

@@ -17,6 +17,7 @@ obj('Sku',{**fields('id product_id price cost stock held version',num),**fields(
 obj('Product',{**fields('id category_id points_percent commission_percent created_at price stock',num),**fields('name subtitle description image color status'),'featured':boolean(),'skus':arr(ref('Sku'))},['name','category_id','subtitle','description','image','color','status','points_percent','commission_percent','featured','skus'])
 obj('Category',{**fields('id sort_no',num),'name':string()},['name','sort_no'])
 obj('Member',{**fields('id inviter_id points points_held available reserved debt created_at',num),**fields('name invite_code'),'promoter':boolean(),'blocked':boolean()},['id','name','invite_code','points','points_held','available','reserved','debt','promoter'])
+S['Member']['properties'].update({**fields('phoneMasked identityStatus'),**{name:boolean() for name in ['phoneBound','wechatBound','identityDevelopment']}})
 obj('Admin',{**fields('id',num),**fields('username role'),'active':boolean()},['id','username','role'])
 obj('Rule',{**fields('level1Bps level2Bps marginSharePercent settlementDays pointsPer100Yuan freightFen freeShippingFen monthlyBudgetFen monthlyCapFen monthlyPoolBps commissionBudgetFen',num),'distributionEnabled':boolean()})
 obj('RuleVersion',{**fields('id creator reviewer created_at',num),**fields('state config')})
@@ -38,6 +39,7 @@ obj('Reconciliation',{'batches':arr(ref('ReconcileBatch')),'issues':arr(ref('Iss
 obj('Audit',{**fields('id actor_id created_at',num),**fields('action resource detail')})
 obj('Team',{'level1':arr(ref('Member')),'level2':arr(ref('Member')),'commissions':arr(ref('Commission'))})
 obj('Config',{**fields('brand appId mchId support privacy shareBase'),**{k:boolean() for k in ['devMode','distributionEnabled','transferEnabled','monthlyEnabled','logisticsEnabled']}})
+S['Config']['properties'].update({name:boolean() for name in ['phoneLoginEnabled','identityVerificationEnabled','identityRequiredForWithdrawal']})
 obj('Session',{'token':string('高熵会话凭据，仅客户端安全保存'),'kind':string(),'profile':{'oneOf':[ref('Member'),ref('Admin')]}})
 obj('Prepay',{**fields('timeStamp nonceStr package signType paySign')})
 obj('Summary',{**fields('members orders gmv pendingOrders pendingRefunds pendingWithdrawals issues',num),'trend':arr(ref('Order'))})
@@ -64,6 +66,15 @@ obj('Accepted',{'accepted':boolean()})
 obj('Blocked',{'blocked':boolean()})
 obj('Active',{'active':boolean()})
 obj('ResetPassword',{'password':{'type':'string','minLength':12}})
+obj('PhoneCodeRequest',{'phone':{'type':'string','pattern':'^1[3-9][0-9]{9}$'}})
+obj('PhoneCodeChallenge',{'challengeId':string(),'expiresIn':num(),'retryAfter':num(),'development':boolean(),'devCode':{'type':'string','pattern':'^[0-9]{6}$','description':'仅development模式返回；生产禁止使用'}},['challengeId','expiresIn','retryAfter','development'])
+obj('PhoneLoginRequest',{'phone':S['PhoneCodeRequest']['properties']['phone'],'code':{'type':'string','pattern':'^[0-9]{6}$'},'challengeId':string(),'inviteCode':string(),'accepted':{'type':'boolean','const':True}},['phone','code','challengeId','accepted'])
+obj('PhoneBindingRequest',{name:S['PhoneLoginRequest']['properties'][name] for name in ['phone','code','challengeId']})
+obj('WechatBindingRequest',{'code':string()})
+obj('IdentityRequest',{'name':{'type':'string','minLength':2,'maxLength':40},'idNumber':{'type':'string','pattern':'^[0-9]{17}[0-9Xx]$'},'accepted':{'type':'boolean','const':True}})
+obj('IdentityStatus',{'status':{'type':'string','enum':['UNVERIFIED','PENDING','VERIFIED','REJECTED']},**fields('nameMasked idNumberMasked rejectionReason provider'),'development':boolean(),'verifiedAt':{'type':['integer','null'],'format':'int64'}})
+S['IdentityStatus']['properties']['retryAfter']=num('当前认证请求剩余租约或失败冷却秒数')
+S['IdentityStatus']['required'].append('retryAfter')
 # Public projections deliberately omit cost, identity and private account fields.
 obj('PublicSku',{**fields('id price stock',num),'name':string()})
 obj('Invitee',{**fields('id created_at',num),'name':string(),'promoter':boolean()},['id','name','created_at'])
@@ -82,11 +93,29 @@ for model,nullable in {'Order':'transaction_id paid_at completed_at carrier trac
 # method,path -> (response schema, request schema)
 routes={
 ('get','/config'):('Config',None),('get','/categories'):('[Category]',None),('get','/products'):('[ProductCard]',None),('get','/products/{id}'):('PublicProduct',None),('get','/rules/public'):('Rule',None),('post','/auth/wechat'):('Session','LoginRequest'),('post','/auth/dev'):('Session','DevLoginRequest'),('post','/auth/admin'):('Session','AdminLoginRequest'),('post','/auth/logout'):(None,None),('get','/me'):('Member',None),('put','/me'):(None,'Name'),('post','/me/promoter'):(None,'Accepted'),('get','/me/ledger'):('[Ledger]',None),('get','/me/team'):('Team',None),('get','/me/withdrawals'):('[Withdrawal]',None),('post','/me/withdrawals'):('StateId','WithdrawRequest'),('get','/me/awards'):('[Award]',None),('get','/addresses'):('[Address]',None),('post','/addresses'):('Id','Address'),('delete','/addresses/{id}'):(None,None),('get','/cart'):('[CartItem]',None),('put','/cart/{sku}'):(None,'Quantity'),('post','/checkout/quote'):('Quote','QuoteRequest'),('post','/orders'):('Order','OrderRequest'),('get','/orders'):('[Order]',None),('get','/orders/{no}'):('Order',None),('post','/orders/{no}/prepay'):('PrepayResult',None),('post','/orders/{no}/cancel'):(None,None),('get','/orders/{no}/payment-status'):('Order',None),('get','/orders/{no}/logistics'):('[Track]',None),('post','/orders/{no}/receive'):(None,None),('post','/dev/orders/{no}/pay'):(None,None),('post','/refunds'):('StateId','RefundRequest'),('get','/admin/me'):('Admin',None),('post','/admin/password'):(None,'Password'),('get','/admin/summary'):('Summary',None),('get','/admin/products'):('[Product]',None),('post','/admin/products'):('Id','Product'),('post','/admin/categories'):('Id','Category'),('get','/admin/orders'):('[OrderSummary]',None),('get','/admin/orders/{no}'):('Order',None),('post','/admin/orders/{no}/ship'):(None,'Ship'),('get','/admin/refunds'):('[Refund]',None),('post','/admin/refunds/{id}/review'):(None,'Review'),('get','/admin/members'):('[Member]',None),('post','/admin/members/{id}/block'):(None,'Blocked'),('get','/admin/commissions'):('[Commission]',None),('get','/admin/ledger'):('[Ledger]',None),('get','/admin/withdrawals'):('[Withdrawal]',None),('post','/admin/withdrawals/{id}/review'):(None,'Review'),('post','/admin/withdrawals/{id}/execute'):(None,None),('post','/admin/withdrawals/{id}/query'):(None,None),('post','/admin/dev/withdrawals/{id}/confirm'):(None,None),('get','/admin/rules'):('[RuleVersion]',None),('post','/admin/rules'):(None,'Rule'),('post','/admin/rules/{id}/approve'):(None,None),('get','/admin/settlements'):('[Settlement]',None),('post','/admin/settlements'):('Id','Month'),('post','/admin/settlements/{id}/approve'):(None,None),('get','/admin/reconciliation'):('Reconciliation',None),('post','/admin/reconciliation'):('ReconcileBatch',None),('post','/admin/issues/{id}/resolve'):(None,'Reason'),('get','/admin/accounts'):('[Admin]',None),('post','/admin/accounts'):(None,'AccountRequest'),('post','/admin/accounts/{id}/active'):(None,'Active'),('post','/admin/accounts/{id}/reset-password'):(None,'ResetPassword'),('get','/admin/audit'):('[Audit]',None)}
+routes.update({
+ ('post','/auth/phone/code'):('PhoneCodeChallenge','PhoneCodeRequest'),
+ ('post','/auth/phone'):('Session','PhoneLoginRequest'),
+ ('post','/me/phone/code'):('PhoneCodeChallenge','PhoneCodeRequest'),
+ ('post','/me/phone'):('Member','PhoneBindingRequest'),
+ ('post','/me/wechat'):('Member','WechatBindingRequest'),
+ ('get','/me/identity'):('IdentityStatus',None),
+ ('post','/me/identity'):('IdentityStatus','IdentityRequest'),
+})
 controller_dir=root/'server/src/main/java/com/sujian/mall/controller'
 controllers=sorted(path for path in controller_dir.glob('*Controller.java') if path.name!='WechatCallbackController.java')
 assert controllers,'No domain controllers found'
-source='\n'.join(path.read_text() for path in controllers)
-actual={(m.lower().removesuffix('mapping'),p) for m,p in re.findall(r'@(GetMapping|PostMapping|PutMapping|DeleteMapping)\("([^"]+)"\)',source)}
+mapped=[]
+for controller in controllers:
+ source=controller.read_text()
+ class_mapping=re.search(r'@RequestMapping\("([^"]+)"\)',source)
+ assert class_mapping,f'Controller has no class mapping: {controller.name}'
+ prefix=class_mapping.group(1).rstrip('/')
+ assert prefix.startswith('/api/v1'),controller.name
+ for method,path in re.findall(r'@(GetMapping|PostMapping|PutMapping|DeleteMapping)(?:\("([^"]*)"\))?',source):
+  mapped.append((method.lower().removesuffix('mapping'),(prefix+path).removeprefix('/api/v1') or '/'))
+actual=set(mapped)
+assert len(mapped)==len(actual),'Duplicate controller operation mapping'
 assert actual==set(routes),f'Undocumented/missing routes: {actual^set(routes)}'
 spec={'openapi':'3.1.0','info':{'title':'素见好物交易API','version':'1.0.0','description':'金额均为整数分，积分为整数点，时间戳毫秒；管理接口需角色权限，高危操作需不同经办和复核人。'},'servers':[{'url':'/api/v1','description':'同域部署；客户端基址由环境变量覆盖'}],'paths':{},'components':{'securitySchemes':{'bearerAuth':{'type':'http','scheme':'bearer'}},'schemas':S}}
 for (method,path),(response,request) in routes.items():
@@ -99,7 +128,10 @@ for (method,path),(response,request) in routes.items():
     if parameters:op['parameters']=parameters
     if request:op['requestBody']={'required':True,'content':{'application/json':{'schema':ref(request)}}}
     if '/dev/' in path or path=='/auth/dev':op['description']='仅APP_DEV_MODE=true可调用。禁止用于生产资金事实。'
-    if path=='/orders/{no}/prepay':op['description']='微信原生支付参数。开发环境返回mode=DEVELOPMENT和orderNo，不含真实支付参数。'
+    if path=='/orders/{no}/prepay':op['description']='微信原生支付参数。生产缺真实微信绑定时返回WECHAT_BINDING_REQUIRED，且不标记预支付。开发环境返回mode=DEVELOPMENT和orderNo。'
+    if path=='/me/identity':op['description']='姓名/身份证二要素信息匹配，非人脸活体；仅返回脱敏信息。开发模拟development=true，不具备生产提现资格。'
+    if path in ['/auth/phone/code','/me/phone/code']:op['description']='验证码300秒有效，重发冷却60秒、最多5次错误，绑定用途及会员隔离。devCode仅开发模式返回。'
+    if path=='/auth/phone':op['description']='短信验证码单次消费；首次登录自动注册，accepted必须true。验证码不授予管理权限，不自动合并已有账户。'
     spec['paths'].setdefault(path,{})[method]=op
 for kind in ['pay','refund','transfer']:
     spec['paths']['/callbacks/wechat/'+kind]={'post':{'operationId':'wechat_'+kind,'summary':'微信签名加密回调','tags':['微信回调'],'security':[],'parameters':[{'name':name,'in':'header','required':True,'schema':string()} for name in ['Wechatpay-Serial','Wechatpay-Timestamp','Wechatpay-Nonce','Wechatpay-Signature']],'requestBody':{'required':True,'content':{'application/json':{'schema':{'type':'object','properties':{'id':string(),'event_type':string(),'resource':{'type':'object','properties':{'algorithm':{'type':'string','const':'AEAD_AES_256_GCM'},'nonce':string(),'ciphertext':string(),'associated_data':string()},'required':['algorithm','nonce','ciphertext']}},'required':['id','resource']}}}},'responses':{'200':{'description':'仅验签、解密和业务核验成功后返回SUCCESS'},'400':{'description':'签名或密文无效'},'409':{'description':'金额、归属或业务状态冲突'}}}}

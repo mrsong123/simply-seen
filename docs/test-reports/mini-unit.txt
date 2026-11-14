@@ -1,9 +1,13 @@
 2026-11-14: native mini unit tests
- ✓ tests/request.spec.ts (8 tests) 660ms
- ✓ tests/router.spec.ts (5 tests) 53ms
- ✓ tests/cart-store.spec.ts (3 tests) 41ms
- ✓ tests/order-completion.spec.ts (3 tests) 24ms
- ✓ tests/catalog-loading.spec.ts (2 tests) 64ms
- Test Files  5 passed (5)
-      Tests  21 passed (21)
-   Duration  2.90s (transform 295ms, setup 0ms, collect 333ms, tests 841ms, environment 1ms, prepare 594ms)
+ ✓ tests/request.spec.ts (9 tests) 694ms
+ ✓ tests/catalog-loading.spec.ts (2 tests) 107ms
+ ✓ tests/order-completion.spec.ts (3 tests) 68ms
+ ✓ tests/account-session.spec.ts (6 tests) 56ms
+ ✓ tests/router.spec.ts (6 tests) 30ms
+ ✓ tests/cart-store.spec.ts (3 tests) 37ms
+ ✓ tests/payment-account.spec.ts (3 tests) 26ms
+ ✓ tests/phone-challenge.spec.ts (6 tests) 33ms
+ ✓ tests/identity-rules.spec.ts (3 tests) 14ms
+ Test Files  9 passed (9)
+      Tests  41 passed (41)
+   Duration  5.61s (transform 449ms, setup 0ms, collect 716ms, tests 1.06s, environment 3ms, prepare 1.27s)

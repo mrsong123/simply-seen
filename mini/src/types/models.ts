@@ -32,6 +32,11 @@ export interface Member {
   available: number;
   reserved: number;
   debt: number;
+  phoneMasked: string;
+  phoneBound: boolean;
+  wechatBound: boolean;
+  identityStatus: import("./account").IdentityStatus;
+  identityDevelopment: boolean;
 }
 export interface AppConfig {
   devMode: boolean;
@@ -43,6 +48,9 @@ export interface AppConfig {
   support: string;
   privacy: string;
   shareBase: string;
+  phoneLoginEnabled: boolean;
+  identityVerificationEnabled: boolean;
+  identityRequiredForWithdrawal: boolean;
 }
 export interface PublicRule {
   level1Bps: number;

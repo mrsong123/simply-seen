@@ -51,6 +51,11 @@ export interface Address {
   is_default: boolean;
 }
 export interface MemberProfile {
+  phoneBound: boolean;
+  phoneMasked: string;
+  wechatBound: boolean;
+  identityStatus: string;
+  identityDevelopment: boolean;
   id: number;
   name: string;
   invite_code: string;
@@ -64,6 +69,9 @@ export interface MemberProfile {
   created_at: number;
 }
 export interface PublicConfig {
+  phoneLoginEnabled: boolean;
+  identityVerificationEnabled: boolean;
+  identityRequiredForWithdrawal: boolean;
   brand: string;
   appId: string;
   mchId: string;

@@ -1,0 +1,4 @@
+Updated non-root Java image built from the verified JDK21 JAR: passed
+Clean default local startup, real phone auto-registration and masked development identity: passed
+Local account encryption key generated with POSIX mode 600: passed
+No real SMS or resident identity provider transaction was performed.

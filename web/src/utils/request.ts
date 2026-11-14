@@ -63,10 +63,18 @@ function fail(error: any, config?: InternalConfig): never {
     (error.code === "ECONNABORTED"
       ? "请求超时，请稍后重试"
       : "无法连接服务，请检查后端与接口配置");
+  let staleSession = false;
   if (status === 401 && config?.sessionKind !== "none") {
     const kind = config?.sessionKind ?? "member";
-    persistSession(kind, null);
-    hooks.onUnauthorized?.(kind);
+    const current = readSession(kind);
+    staleSession = Boolean(
+      current &&
+        config?.headers.get("Authorization") !== `Bearer ${current.token}`,
+    );
+    if (!staleSession) {
+      persistSession(kind, null);
+      hooks.onUnauthorized?.(kind);
+    }
   }
   const failure =
     error instanceof ApiError
@@ -77,7 +85,7 @@ function fail(error: any, config?: InternalConfig): never {
           status,
           payload?.requestId,
         );
-  if (!config?.silent) hooks.onError?.(failure);
+  if (!config?.silent && !staleSession) hooks.onError?.(failure);
   throw failure;
 }
 instance.interceptors.response.use(

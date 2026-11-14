@@ -37,6 +37,13 @@ function openRefund() {
 }
 async function pay() {
   await run(async () => {
+    if (!config.config.devMode) {
+      await auth.fetchMemberProfile();
+      if (!auth.memberProfile?.wechatBound) {
+        ui.message("请在小程序使用相同手机号登录并绑定微信后支付", true);
+        return;
+      }
+    }
     const result = await orderApi.prepay(order.value.id);
     if (result.mode === "DEVELOPMENT") modal.value = "testPayment";
     else ui.message("请在微信小程序内完成支付；本页面可查询支付结果");
@@ -136,6 +143,15 @@ async function orderAction(op: string) {
       <div v-if="order.cash_refunded" class="summary-line">
         <span>已退款</span><strong>¥{{ money(order.cash_refunded) }}</strong>
       </div>
+      <p
+        v-if="order.state === 'CREATED' && !config.config.devMode"
+        class="notice"
+      >
+        微信支付请在小程序完成。手机号会员需先在小程序使用同一手机号登录并绑定微信，再查看这笔订单。
+        <RouterLink to="/account/security" class="text-link"
+          >查看账户绑定</RouterLink
+        >
+      </p>
       <div class="button-row">
         <template v-if="order.state === 'CREATED'"
           ><button

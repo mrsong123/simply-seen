@@ -20,6 +20,16 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 describe("Native page routing and auth guard", () => {
+  it("protects direct security and identity pages and restores their intended destination", async () => {
+    const router = await import("../src/utils/router");
+    expect(router.requireSession("identity")).toBe(false);
+    expect(memory.get("sj-login-return")).toBe("/pages/account/identity");
+    memory.set("sj-token", "test");
+    router.navigate("security");
+    expect(native.navigateTo).toHaveBeenLastCalledWith({
+      url: "/pages/account/security",
+    });
+  });
   it("redirects anonymous checkout navigation through login and restores the intended route", async () => {
     const router = await import("../src/utils/router");
     router.navigate("checkout");

@@ -16,6 +16,7 @@ public class ProductionConfigurationValidator {
 
   public void validate() {
     if (settings.dev()) return;
+    AccountConfigurationValidator.validate(settings);
     Problem.require(
         settings.required("DATABASE_URL").startsWith("jdbc:mysql:"),
         "PRODUCTION_DATABASE",

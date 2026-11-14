@@ -46,9 +46,16 @@ public class Settings {
     return Boolean.parseBoolean(get(name, "false"));
   }
 
+  public boolean identityRequiredForWithdrawal() {
+    return !dev() || Boolean.parseBoolean(get("IDENTITY_REQUIRED_FOR_WITHDRAWAL", "true"));
+  }
+
   public Map<String, Object> publicConfig() {
     var result = new LinkedHashMap<String, Object>();
     result.put("devMode", dev());
+    result.put("phoneLoginEnabled", true);
+    result.put("identityVerificationEnabled", true);
+    result.put("identityRequiredForWithdrawal", identityRequiredForWithdrawal());
     result.put("distributionEnabled", enabled("DISTRIBUTION_ENABLED"));
     result.put("transferEnabled", enabled("TRANSFER_ENABLED"));
     result.put("monthlyEnabled", enabled("MONTHLY_ENABLED"));

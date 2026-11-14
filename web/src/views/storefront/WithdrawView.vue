@@ -4,13 +4,23 @@ import { money, date, label } from "@/utils/format";
 import { ref, computed, onMounted } from "vue";
 import { memberApi } from "@/api/member";
 import { useAuthStore } from "@/store/auth";
+import { useConfigStore } from "@/store/config";
+import { withdrawalRequirements } from "@/utils/account";
+import WithdrawalReadiness from "@/components/account/WithdrawalReadiness.vue";
 import { useUiStore } from "@/store/ui";
 import { useAction } from "@/composables/useAction";
 import { createRequestKey } from "@/utils/idempotency";
 import AccountHeader from "@/components/storefront/AccountHeader.vue";
 const auth = useAuthStore(),
-  ui = useUiStore();
+  ui = useUiStore(),
+  config = useConfigStore();
 const profile = computed(() => auth.memberProfile || auth.member?.profile);
+const requirements = computed(() =>
+  withdrawalRequirements(profile.value || {}, config.config),
+);
+const blocked = computed(
+  () => requirements.value.needsIdentity || requirements.value.needsWechat,
+);
 const withdrawals = ref<any[]>([]),
   withdrawAmount = ref("");
 let requestKey = createRequestKey();
@@ -21,6 +31,10 @@ async function load() {
 }
 onMounted(() => load().catch(() => {}));
 async function withdraw() {
+  if (blocked.value) {
+    ui.message("请先完成实名认证及微信绑定", true);
+    return;
+  }
   await run(async () => {
     const amount = Number(withdrawAmount.value);
     if (
@@ -51,18 +65,23 @@ async function withdraw() {
         <p v-if="profile.debt" class="warning">
           待追偿 ¥{{ money(profile.debt) }}，请先联系客服核对。
         </p>
+        <WithdrawalReadiness
+          :needs-identity="requirements.needsIdentity"
+          :needs-wechat="requirements.needsWechat"
+        />
         <label class="input-label"
           >申请金额（元）<input
             v-model="withdrawAmount"
             inputmode="decimal"
             placeholder="请输入提现金额"
+            :disabled="blocked || busy"
         /></label>
         <p class="caption left">
           提现需经财务审核及另一名管理员执行；税额按审核后的适用税务依据确定，渠道成功前不会标记为到账。
         </p>
         <button
           class="button dark"
-          :disabled="busy || !withdrawAmount"
+          :disabled="blocked || busy || !withdrawAmount"
           @click="withdraw"
         >
           提交提现申请 <Icon name="ArrowRight" :size="17" />

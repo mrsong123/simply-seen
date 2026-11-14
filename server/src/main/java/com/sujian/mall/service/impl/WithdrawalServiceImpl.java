@@ -19,11 +19,13 @@ public class WithdrawalServiceImpl implements WithdrawalService {
   private final BusinessSupport d;
   private final Settings c;
   private final CommerceService shop;
+  private final IdentityService identities;
 
-  public WithdrawalServiceImpl(BusinessSupport d, Settings c, CommerceService shop) {
+  public WithdrawalServiceImpl(BusinessSupport d, Settings c, CommerceService shop, IdentityService identities) {
     this.d = d;
     this.c = c;
     this.shop = shop;
+    this.identities = identities;
   }
 
   @Transactional
@@ -36,6 +38,7 @@ public class WithdrawalServiceImpl implements WithdrawalService {
         () -> {
           Problem.require(
               c.enabled("TRANSFER_ENABLED") || c.dev(), "TRANSFER_DISABLED", "提现服务尚未开放");
+          identities.requireVerifiedForWithdrawal(uid);
           long amount = n(b, "amountFen");
           var m = com.sujian.mall.common.Rows.required(memberMapper.lockAccountById(uid));
           Problem.require(
@@ -82,6 +85,7 @@ public class WithdrawalServiceImpl implements WithdrawalService {
         "DUAL_REVIEW_REQUIRED",
         "需由另一名管理员执行已审批出款");
     var m = com.sujian.mall.common.Rows.required(memberMapper.lockAccountById(n(r, "member_id")));
+    identities.requireVerifiedForWithdrawal(n(r, "member_id"));
     Problem.require(n(m, "debt") == 0 && !b(m, "blocked"), "RISK_REVIEW", "账户需风险复核");
     withdrawalMapper.updateForExecuteWithdrawal(actor, id);
     d.event(id + ":transfer", "TRANSFER", id);

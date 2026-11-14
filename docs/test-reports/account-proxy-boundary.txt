@@ -1,0 +1,5 @@
+Nginx image build and template rendering: passed
+Actual HTTP through Nginx to isolated JDK header echo: passed
+Forged X-Forwarded-For replaced by connection client address: passed
+Client Forwarded and X-Forwarded-Prefix removed: passed
+Only explicitly configured TRUSTED_PROXY_CIDR may supply an upstream client identity.

@@ -8,9 +8,17 @@ import type {
 } from "../types/models";
 export const memberApi = {
   login: (code: string, inviteCode: string) =>
-    request.post<Session>("/auth/wechat", { code, inviteCode }),
+    request.post<Session>(
+      "/auth/wechat",
+      { code, inviteCode },
+      { anonymous: true },
+    ),
   devLogin: (name: string, inviteCode: string) =>
-    request.post<Session>("/auth/dev", { name, inviteCode }),
+    request.post<Session>(
+      "/auth/dev",
+      { name, inviteCode },
+      { anonymous: true },
+    ),
   logout: () => request.post("/auth/logout"),
   profile: () => request.get<Member>("/me"),
   updateName: (name: string) => request.put("/me", { name }),

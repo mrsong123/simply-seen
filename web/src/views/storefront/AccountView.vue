@@ -55,6 +55,7 @@ onMounted(() =>
         <RouterLink
           v-for="link in [
             ['orders', '我的订单', 'Package'],
+            ['account/security', '账户安全与实名认证', 'Shield'],
             ['addresses', '地址管理', 'MapPin'],
             ['share', '分享与佣金', 'Share2'],
             ['withdraw', '佣金提现', 'Wallet'],

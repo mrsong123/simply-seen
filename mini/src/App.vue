@@ -11,6 +11,7 @@ onLaunch(() => {
 @import "./styles/catalog.css";
 @import "./styles/trade.css";
 @import "./styles/member.css";
+@import "./styles/security.css";
 page {
   background: #f6f7f1;
   color: #344432;

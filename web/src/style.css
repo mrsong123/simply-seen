@@ -5,6 +5,7 @@
 @import "./styles/storefront/home.css";
 @import "./styles/storefront/catalog.css";
 @import "./styles/storefront/account.css";
+@import "./styles/storefront/security.css";
 @import "./styles/storefront/product.css";
 @import "./styles/storefront/trade.css";
 @import "./styles/common/feedback.css";

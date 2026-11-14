@@ -56,6 +56,12 @@ export const storefrontRoutes: RouteRecordRaw[] = [
         meta: { requiresMember: true },
       },
       {
+        path: "account/security",
+        name: "account-security",
+        component: () => import("@/views/storefront/AccountSecurityView.vue"),
+        meta: { requiresMember: true },
+      },
+      {
         path: "account",
         name: "account",
         component: () => import("@/views/storefront/AccountView.vue"),

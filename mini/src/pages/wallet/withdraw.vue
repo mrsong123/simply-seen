@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { onShow, onPullDownRefresh } from "@dcloudio/uni-app";
 import PageShell from "../../components/PageShell.vue";
 import PageHeading from "../../components/PageHeading.vue";
+import WithdrawalRequirements from "../../components/WithdrawalRequirements.vue";
 import { memberApi } from "../../api/member";
 import { useSessionStore } from "../../store/session";
 import { useAppStore } from "../../store/app";
 import { useTask } from "../../utils/useTask";
-import { requireSession } from "../../utils/router";
+import { requireSession, navigate } from "../../utils/router";
+import { withdrawalRequirements } from "../../utils/identity";
 import { confirmMerchantTransfer } from "../../utils/wechat";
 import { requestKey } from "../../utils/idempotency";
 import { money, time, label } from "../../utils/format";
@@ -17,6 +19,9 @@ const session = useSessionStore(),
 const { busy, run } = useTask();
 const amount = ref(""),
   withdrawals = ref<Withdrawal[]>([]);
+const needs = computed(() =>
+  withdrawalRequirements(session.profile, app.config),
+);
 let idempotency = requestKey();
 async function refresh() {
   await app.load();
@@ -34,6 +39,15 @@ onPullDownRefresh(async () => {
 });
 async function submit() {
   await run(async () => {
+    await session.refresh();
+    if (needs.value.identity) {
+      navigate("identity");
+      throw new Error("请先完成实名认证，再申请提现");
+    }
+    if (needs.value.wechat) {
+      navigate("security");
+      throw new Error("请先绑定真实微信账户，再申请提现");
+    }
     if (!/^\d+(\.\d{1,2})?$/.test(amount.value) || Number(amount.value) <= 0)
       throw new Error("请输入有效金额，最多两位小数");
     await memberApi.withdraw(
@@ -42,8 +56,8 @@ async function submit() {
     );
     idempotency = requestKey();
     amount.value = "";
-    await refresh();
     uni.showToast({ title: "提现申请已提交", icon: "success" });
+    void refresh().catch(() => undefined);
   });
 }
 async function receive(item: Withdrawal) {
@@ -56,14 +70,14 @@ async function receive(item: Withdrawal) {
       app.config.appId,
       item.package_info,
     );
-    await refresh();
     uni.showToast({ title: "已提交确认，请等待渠道结果", icon: "none" });
+    void refresh().catch(() => undefined);
   });
 }
 </script>
 <template>
   <PageShell
-    ><PageHeading title="佣金提现" /><view class="box"
+    ><PageHeading title="佣金提现" /><WithdrawalRequirements /><view class="box"
       ><text class="sub">可申请提现佣金</text
       ><view class="balance">¥{{ money(session.profile?.available) }}</view
       ><text class="caption"
@@ -78,7 +92,13 @@ async function receive(item: Withdrawal) {
           placeholder="请输入提现金额" /></view
       ><text class="caption"
         >税额经财务根据实际适用依据确认。渠道确认前不表示已到账。</text
-      ><button class="primary" :disabled="busy || !amount" @tap="submit">
+      ><button
+        class="primary"
+        :disabled="
+          busy || !amount || !app.config || needs.identity || needs.wechat
+        "
+        @tap="submit"
+      >
         提交申请
       </button></view
     ><view class="box"

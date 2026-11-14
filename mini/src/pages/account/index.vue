@@ -3,6 +3,7 @@ import { ref } from "vue";
 import { onShow, onPullDownRefresh } from "@dcloudio/uni-app";
 import PageShell from "../../components/PageShell.vue";
 import ModalPanel from "../../components/ModalPanel.vue";
+import AccountLoginPanel from "../../components/AccountLoginPanel.vue";
 import { useSessionStore } from "../../store/session";
 import { useAppStore } from "../../store/app";
 import { useCartStore } from "../../store/cart";
@@ -17,14 +18,14 @@ const session = useSessionStore(),
 const { busy, run } = useTask();
 const ledger = ref<Ledger[]>([]),
   name = ref(""),
-  nameOpen = ref(false),
-  testName = ref(""),
-  accepted = ref(false);
+  nameOpen = ref(false);
 const links: { name: RouteName; label: string }[] = [
   { name: "orders", label: "我的订单" },
   { name: "addresses", label: "地址管理" },
   { name: "share", label: "分享与佣金" },
   { name: "withdraw", label: "佣金提现" },
+  { name: "security", label: "账户与安全" },
+  { name: "identity", label: "实名认证" },
 ];
 async function refresh() {
   await app.load();
@@ -39,19 +40,10 @@ onPullDownRefresh(async () => {
   await reload();
   uni.stopPullDownRefresh();
 });
-async function login(dev = false) {
-  await run(async () => {
-    if (!accepted.value) throw new Error("请阅读并同意服务规则和隐私政策");
-    if (dev) {
-      if (!app.config?.devMode) throw new Error("测试登录未开放");
-      if (testName.value.trim().length < 2)
-        throw new Error("测试身份名称至少2个字符");
-      await session.loginDev(testName.value.trim());
-    } else await session.login();
-    await cart.refresh();
-    await refresh();
-    afterLogin();
-  });
+function loggedIn() {
+  afterLogin();
+  void cart.refresh().catch(() => undefined);
+  void refresh().catch(() => undefined);
 }
 function editName() {
   name.value = session.profile?.name || "";
@@ -73,34 +65,8 @@ async function logout() {
 </script>
 <template>
   <PageShell tab="account"
-    ><view v-if="!session.profile" class="login-card"
-      ><text class="mark">素</text><view class="title">欢迎来到素见</view
-      ><text class="sub">登录，开启你的质感日常。</text
-      ><view class="checkbox" @tap="accepted = !accepted"
-        ><text>{{ accepted ? "☑" : "□" }} 我已阅读并同意</text
-        ><text class="link" @tap.stop="navigate('legal', { type: 'terms' })"
-          >服务规则</text
-        ><text>与</text
-        ><text class="link" @tap.stop="navigate('legal', { type: 'privacy' })"
-          >隐私政策</text
-        ></view
-      ><button class="primary" :disabled="busy || !accepted" @tap="login()">
-        微信授权登录</button
-      ><view v-if="app.config?.devMode" class="field"
-        ><text class="caption">开发环境测试登录，不代表真实微信身份</text
-        ><input
-          v-model="testName"
-          placeholder="测试身份名称（至少2字）"
-          maxlength="30"
-        /><button
-          class="secondary"
-          :disabled="busy || !accepted"
-          @tap="login(true)"
-        >
-          登录开发账户
-        </button></view
-      ></view
-    ><template v-else
+    ><AccountLoginPanel v-if="!session.profile" @success="loggedIn" />
+    <template v-else
       ><view class="member-card"
         ><view class="avatar">{{ session.profile.name.slice(0, 1) }}</view
         ><view

@@ -35,6 +35,23 @@ async function ready() {
   await vi.waitFor(() => expect(current).toBeDefined());
 }
 describe("Axios adapter on the WeChat native transport", () => {
+  it("omits existing credentials from public phone authentication and keeps the active session on a failed anonymous login", async () => {
+    const request = await transport();
+    const pending = request.post(
+      "/auth/phone",
+      { phone: "13800138000", code: "000000" },
+      { anonymous: true },
+    );
+    const assertion = expect(pending).rejects.toMatchObject({
+      code: "OTP_INVALID",
+    });
+    await ready();
+    expect(current!.header.Authorization).toBeUndefined();
+    success({ code: "OTP_INVALID", message: "验证码不正确" }, 401);
+    await assertion;
+    expect(native.removeStorageSync).not.toHaveBeenCalled();
+    expect(native.$emit).not.toHaveBeenCalled();
+  });
   it("serializes JSON and injects the existing session and idempotency headers", async () => {
     const request = await transport();
     const pending = request.post<{ id: string }>(
@@ -128,14 +145,16 @@ describe("Axios adapter on the WeChat native transport", () => {
     success({ code: "PAYMENT_PENDING", message: "支付确认中" });
     await assertion;
   });
-  it('reports a wrong API endpoint returning HTML as an actionable configuration error', async () => {
+  it("reports a wrong API endpoint returning HTML as an actionable configuration error", async () => {
     const request = await transport();
-    const pending = request.get('/config');
-    const assertion = expect(pending).rejects.toMatchObject({code:'INVALID_RESPONSE',notified:true});
+    const pending = request.get("/config");
+    const assertion = expect(pending).rejects.toMatchObject({
+      code: "INVALID_RESPONSE",
+      notified: true,
+    });
     await ready();
-    success('<html>Wrong endpoint</html>');
+    success("<html>Wrong endpoint</html>");
     await assertion;
     expect(native.showToast).toHaveBeenCalledTimes(1);
   });
-
 });

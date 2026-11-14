@@ -1,5 +1,15 @@
 import request from "@/utils/request";
+import type { PhoneChallenge, PhoneLogin } from "@/types/account";
+import type { AuthSession } from "@/utils/session";
 export const authApi = {
+  sendPhoneCode: (phone: string) =>
+    request.post<PhoneChallenge>(
+      "/auth/phone/code",
+      { phone },
+      { sessionKind: "none" },
+    ),
+  loginPhone: (body: PhoneLogin) =>
+    request.post<AuthSession>("/auth/phone", body, { sessionKind: "none" }),
   loginDev: (body: { name: string; inviteCode: string }) =>
     request.post("/auth/dev", body, { sessionKind: "none" }),
   loginAdmin: (body: { username: string; password: string }) =>

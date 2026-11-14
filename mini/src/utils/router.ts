@@ -8,6 +8,8 @@ export const routes = {
   orders: "/pages/orders/index",
   order: "/pages/orders/detail",
   account: "/pages/account/index",
+  security: "/pages/account/security",
+  identity: "/pages/account/identity",
   addresses: "/pages/addresses/index",
   addressEdit: "/pages/addresses/edit",
   share: "/pages/promotion/index",
@@ -23,6 +25,8 @@ const protectedRoutes: RouteName[] = [
   "addresses",
   "addressEdit",
   "withdraw",
+  "security",
+  "identity",
 ];
 export function pathFor(
   name: RouteName,
