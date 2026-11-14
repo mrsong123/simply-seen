@@ -1,0 +1,4 @@
+# Local development starts without real merchant credentials. External env wins.
+APP_DEV_MODE: true
+TRANSFER_ENABLED: false
+API_DOCS_ENABLED: true

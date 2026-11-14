@@ -3,6 +3,9 @@ package com.sujian.mall;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sujian.mall.common.*;
+import com.sujian.mall.config.Settings;
+import com.sujian.mall.integration.wechat.WechatClient;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.security.*;
@@ -12,11 +15,10 @@ import javax.crypto.*;
 import javax.crypto.spec.*;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
-import org.springframework.jdbc.core.JdbcTemplate;
 
 class WechatSecurityTest {
   @TempDir Path dir;
-  Wechat channel;
+  WechatClient channel;
   PrivateKey privateKey;
   final String secret = "12345678901234567890123456789012";
 
@@ -43,11 +45,7 @@ class WechatSecurityTest {
             };
           }
         };
-    var properties = new org.springframework.boot.autoconfigure.jdbc.DataSourceProperties();
-    properties.setUrl("jdbc:h2:mem:crypto");
-    properties.setUsername("sa");
-    properties.setPassword("");
-    channel = new Wechat(c, new Db(new JdbcTemplate(), new ObjectMapper(), properties));
+    channel = new WechatClient(c, new JsonCodec(new ObjectMapper()));
   }
 
   String signed(String ts, String nonce, String body) throws Exception {

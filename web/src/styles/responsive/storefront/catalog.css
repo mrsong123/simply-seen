@@ -1,0 +1,88 @@
+@media (max-width: 1100px) {
+  .catalog-toolbar {
+    flex-wrap: wrap;
+  }
+}
+@media (max-width: 760px) {
+  .product-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 27px 14px;
+  }
+  .section:not(.catalog-section) > .product-grid > .product-card:last-child {
+    display: none;
+  }
+  .product-art {
+    aspect-ratio: 0.88;
+  }
+  .product-tag {
+    top: 10px;
+    left: 9px;
+    font-size: 8px;
+    padding: 5px;
+  }
+  .quick-add {
+    right: 9px;
+    bottom: 9px;
+    width: 25px;
+    height: 25px;
+  }
+  .quick-add svg {
+    width: 15px;
+  }
+  .product-info {
+    display: block;
+    padding-top: 13px;
+  }
+  .product-info h3 {
+    font-size: 13px;
+  }
+  .product-info p {
+    font-size: 9px;
+    line-height: 1.6;
+  }
+  .product-info > strong {
+    font-size: 12px;
+    display: block;
+    margin: 10px 0;
+  }
+  .product-meta {
+    font-size: 8px;
+  }
+  .catalog-heading {
+    padding: 37px 25px 32px;
+  }
+  .catalog-heading h1 {
+    font-size: 29px;
+  }
+  .catalog-heading p {
+    font-size: 10px;
+  }
+  .catalog-heading .eyebrow {
+    font-size: 8px;
+  }
+  .catalog-toolbar {
+    gap: 16px;
+  }
+  .category-pills {
+    gap: 4px;
+  }
+  .category-pills button {
+    padding: 8px 10px;
+    font-size: 11px;
+  }
+  .search-sort {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .search-sort select {
+    font-size: 10px;
+    max-width: 125px;
+  }
+  .result-count {
+    padding: 21px 0 15px;
+  }
+  .points-banner {
+    margin: 20px 22px 0;
+    padding: 20px;
+  }
+}

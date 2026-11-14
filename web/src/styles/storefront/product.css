@@ -1,0 +1,89 @@
+.detail-layout {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  max-width: 1190px;
+  gap: 70px;
+  padding: 45px 30px 80px;
+  margin: auto;
+  align-items: start;
+}
+.detail-art {
+  aspect-ratio: 0.88;
+  position: sticky;
+  top: 25px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.detail-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.detail-copy h1 {
+  font-family: "Songti SC", SimSun, serif;
+  font-size: 35px;
+  margin: 0 0 14px;
+  letter-spacing: 1px;
+}
+.detail-copy .eyebrow {
+  margin-top: 30px;
+  font-size: 9px;
+  margin-bottom: 12px;
+}
+.detail-price {
+  font-size: 27px;
+  margin: 25px 0;
+}
+.detail-price span {
+  font-size: 10px;
+  display: inline-block;
+  background: #edf0e6;
+  color: #6f805f;
+  padding: 6px 8px;
+  margin-left: 16px;
+  vertical-align: middle;
+  border-radius: 4px;
+}
+.sku-options {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.sku-options button {
+  background: transparent;
+  border: 1px solid var(--line);
+  padding: 10px 15px;
+  font-size: 12px;
+  border-radius: 5px;
+}
+.sku-options button.active {
+  border-color: var(--green);
+  background: #edf0e8;
+}
+.quantity-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 25px 0;
+  font-size: 12px;
+}
+.quantity-line small {
+  margin-left: 10px;
+  color: #98a08f;
+}
+.detail-copy > .button {
+  margin-bottom: 10px;
+}
+.detail-promises {
+  display: flex;
+  gap: 25px;
+  justify-content: center;
+  font-size: 10px;
+  color: #8a977e;
+  padding: 14px 0 24px;
+}
+.detail-promises span {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}

@@ -1,0 +1,5 @@
+Clean local profile: ready without .env or merchant credentials
+Private random bootstrap credentials: created, not logged, stable after restart
+Real HTTP: login, permission rejection, address, quote, idempotent order, development pay, shipment, receipt, refund: passed
+Production without required configuration: startup rejected
+No real merchant transaction was performed.

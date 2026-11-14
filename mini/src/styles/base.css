@@ -1,0 +1,281 @@
+.app {
+  padding-bottom: 150rpx;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 25rpx 35rpx;
+  background: #f8f9f4;
+}
+
+.brand {
+  display: flex;
+  gap: 17rpx;
+  align-items: center;
+  letter-spacing: 4rpx;
+  font-size: 31rpx;
+}
+
+.mark {
+  background: #344e3c;
+  color: #fff;
+  border-radius: 5rpx 18rpx 5rpx 5rpx;
+  font-family: serif;
+  font-size: 42rpx;
+  width: 61rpx;
+  height: 68rpx;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.english {
+  display: block;
+  font-size: 13rpx;
+  letter-spacing: 3rpx;
+  margin-top: 6rpx;
+  color: #93a086;
+}
+
+.toplink {
+  font-size: 21rpx;
+  color: #89977c;
+}
+
+.eyebrow {
+  display: block;
+  font-size: 15rpx;
+  letter-spacing: 3rpx;
+  color: #8c9c7c;
+  margin-bottom: 22rpx;
+}
+
+.sub {
+  font-size: 21rpx;
+  color: #9aa58e;
+  line-height: 1.9;
+  display: block;
+}
+
+.nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-around;
+  background: #fcfdf8f5;
+  border-top: 1rpx solid #e8eddf;
+  padding: 17rpx 0 calc(17rpx + env(safe-area-inset-bottom));
+  z-index: 20;
+}
+
+.nav > view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 18rpx;
+  color: #a5ae98;
+  gap: 8rpx;
+}
+
+.nav > view.active {
+  color: #3f6231;
+}
+
+.nav-icon {
+  font-size: 37rpx;
+  line-height: 1.1;
+}
+
+.box {
+  background: #fff;
+  border: 1rpx solid #e7ecdd;
+  margin: 25rpx 28rpx;
+  padding: 30rpx;
+  border-radius: 14rpx;
+}
+
+.title {
+  font-family: serif;
+  font-size: 42rpx;
+  line-height: 1.5;
+  letter-spacing: 2rpx;
+  margin: 10rpx 0 20rpx;
+}
+
+.field-title {
+  font-size: 27rpx;
+  font-weight: 500;
+  margin: 15rpx 0 23rpx;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  margin: 25rpx 0;
+  font-size: 24rpx;
+  line-height: 1.7;
+}
+
+.primary,
+.secondary {
+  display: block;
+  width: 100%;
+  padding: 8rpx 0;
+  margin: 25rpx 0 0;
+  border-radius: 10rpx;
+  font-size: 25rpx;
+  font-weight: 400;
+  background: #344e3c;
+  color: #fff;
+  line-height: 2.6;
+  letter-spacing: 1rpx;
+}
+
+.secondary {
+  background: #f0f4e8;
+  color: #597946;
+  border: 1rpx solid #dce5cf;
+}
+
+.primary[disabled] {
+  background: #c2ccba;
+  color: #fff;
+}
+
+.text-button {
+  background: transparent;
+  font-size: 22rpx;
+  color: #8da078;
+  margin: 25rpx auto;
+}
+
+.description {
+  white-space: pre-line;
+  font-size: 23rpx;
+  line-height: 2.2;
+  color: #8d9d7b;
+  display: block;
+}
+
+.divider {
+  height: 1rpx;
+  background: #e6ecdc;
+  margin: 35rpx 0;
+}
+
+.page-heading {
+  padding: 35rpx 35rpx 20rpx;
+  background: #edf1e4;
+}
+
+.page-heading .title {
+  font-size: 39rpx;
+}
+
+.empty {
+  text-align: center;
+  padding: 90rpx 40rpx;
+  font-size: 26rpx;
+  color: #8e9e7c;
+  line-height: 2;
+}
+
+.empty button {
+  max-width: 350rpx;
+  margin: 35rpx auto;
+}
+
+.big {
+  font-size: 36rpx;
+}
+
+.caption {
+  display: block;
+  font-size: 19rpx;
+  line-height: 1.9;
+  color: #9ba98b;
+}
+
+.field {
+  margin: 27rpx 0;
+}
+
+.field > text {
+  font-size: 23rpx;
+  color: #849870;
+}
+
+.field input,
+.field textarea {
+  display: block;
+  width: 100%;
+  background: #fbfcf7;
+  border: 1rpx solid #dfe8d3;
+  padding: 19rpx;
+  border-radius: 10rpx;
+  font-size: 25rpx;
+  margin-top: 14rpx;
+  height: 78rpx;
+}
+
+.field textarea {
+  height: 130rpx;
+}
+
+.link {
+  font-size: 22rpx;
+  color: #64854f;
+}
+
+.badge {
+  background: #e9f0de;
+  border-radius: 7rpx;
+  padding: 5rpx 12rpx;
+  color: #6e8d55;
+  font-size: 19rpx;
+}
+
+.mask {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: #1d301c66;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 35rpx;
+}
+
+.dialog {
+  max-height: 85vh;
+  width: 100%;
+  background: #fcfef8;
+  border-radius: 20rpx;
+  padding: 45rpx 32rpx;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.close {
+  position: absolute;
+  right: 25rpx;
+  top: 15rpx;
+  font-size: 42rpx;
+  color: #9cae8d;
+}
+
+.dialog .title {
+  font-size: 36rpx;
+  padding-right: 30rpx;
+}
+
+.dialog .description {
+  font-size: 24rpx;
+  line-height: 2.3;
+}

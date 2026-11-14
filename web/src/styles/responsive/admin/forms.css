@@ -1,0 +1,10 @@
+@media (max-width: 760px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .sku-form {
+    grid-template-columns: 1fr 1fr;
+    gap: 13px;
+  }
+}

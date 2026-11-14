@@ -1,36 +1,46 @@
 # 验证与交付记录
 
-验证日期：2026-11-12。本记录区分代码、当前开发实例及真实商户验证；不把配置示例、模拟资金或页面存在视为生产验收。
+最新验证日期：2026-11-14，针对本次分层重构及开箱启动修复。本记录区分代码、当前开发实例及真实商户验证；不把配置示例、模拟资金或页面存在视为生产验收。
 
 ## 已执行且通过
 
 | 检查 | 结果与证据 |
 |---|---|
-| Java21可运行JAR构建 | Maven package成功，`server/target/mall-1.0.0.jar` |
-| H2测试配置 | 22项：15项交易/分销集成、5项签名/密文验证、2项物流响应校验；0失败、0错误、0跳过。见`docs/test-reports/h2` |
-| MySQL8.4测试配置 | 同22项全部通过，使用隔离测试库；MySQL迁移和并发真实运行。见`docs/test-reports/mysql` |
+| Java21可运行JAR构建 | 官方Temurin21完整JDK中，从根聚合POM执行默认javac的`clean verify`，两个模块均成功；产物`server/target/mall-1.0.0.jar` |
+| H2测试配置 | 25项：15项交易/分销集成、5项签名/密文验证、2项物流响应校验、2项默认启动/生产防护、1项分层架构检查；0失败、0错误、0跳过。见`docs/test-reports/h2` |
+| MySQL8.4测试配置 | 同25项全部通过，使用隔离测试库；MySQL迁移和并发真实运行。见`docs/test-reports/mysql` |
+| 无配置本地启动 | 在新建工作目录、无.env和商户参数的条件下启动最终JAR；真实HTTP完成鉴权、报价、幂等下单、开发付款、发货、收货和退款，重启后密码及数据保留，缺配置的prod启动拒绝。见`docs/test-reports/local-startup.txt` |
 | 网页冻结依赖安装 | `npm ci`成功，锁文件存在 |
 | 网页类型与生产构建 | `vue-tsc --noEmit`及Vite build成功 |
+| 网页单元回归 | 21项通过，覆盖Axios、路由权限、环境配置、下单导航和验收账号读取 |
 | 小程序冻结依赖安装 | `npm ci`成功，锁文件存在 |
 | 小程序静态类型检查 | `npm run typecheck --prefix mini`通过 |
 | 微信小程序生产编译 | `npm run build:mp-weixin --prefix mini`通过，产物在`mini/dist/build/mp-weixin` |
-| 浏览器端到端 | 2项通过：桌面完整交易与后台协作、390px移动布局/导航/搜索；使用真实API，无拦截或模拟网络响应 |
-| 容器构建与运行 | Java非root镜像、Nginx镜像均构建运行成功，Nginx到Java真实代理成功；最终两项E2E在容器端口再次通过 |
-| 数据库备份与恢复 | 对隔离MySQL测试库完成mysqldump、gzip、SHA-256校验、实际恢复；恢复后逻辑SQL内容与备份完全一致 |
+| 小程序单元回归 | 21项通过，覆盖原生Axios适配器、鉴权、购物袋、公开商品加载和下单完成导航 |
+| 浏览器验收 | 4项通过：2项使用真实API，执行桌面完整交易与后台协作及390px移动布局/导航/搜索；另2项控制产品响应，验证首页加载、空数据、失败和重试。见`docs/test-reports/browser.txt` |
+| 最新Java容器 | 重建最终JAR的非root镜像，无.env启动成功，health与商品接口通过，自动创建的本地管理员文件权限600；修复`/app/data`目录写权限 |
 | API清单 | `scripts/generate-contract.py`逐一核对Java映射，67个应用操作+3个微信回调进入OpenAPI3.1 |
 | 源码检查 | 业务源码无TODO、未实现异常或待开发接口；输入框提示、空数据状态与未配置渠道错误不属于伪造业务结果 |
 
-容器第一次试运行发现构建文件权限过严导致非root进程无法读取JAR，已修复Docker COPY权限并重建；最终容器验收通过。MySQL测试发现保留字段名冲突，已修复并从空库重新验证。环境内npm原生子进程和浏览器需正常命令沙箱升级运行，不是通过关闭TLS或校验解决。
+2026-11-12的交付还执行过Nginx到Java容器的实际代理、两项容器浏览器验收及MySQL备份恢复；备份恢复证据保留在`docs/test-reports/backup-restore.txt`。本次重构没有重复宣称这些历史检查为新执行结果。环境内npm原生子进程和浏览器需正常命令沙箱升级运行，不是通过关闭TLS或校验解决。
+
+## 本次结构与启动修复
+
+后端根包仅保留Application入口，14个Controller调用Service接口；26个Mapper和26个Entity承担持久化，SQL离开Service。普通CRUD使用BaseMapper；购物袋复合主键及事务锁查询使用显式领域SQL。业务实现按订单、库存、支付、退款、分销、提现、月结、后台和初始化拆分，没有保留JdbcTemplate通用数据库入口。
+
+网页拆成router、store、views、components、api、utils及布局/组合逻辑；领域API使用封装后的`request.post/get`，Axios集中处理令牌、幂等头和响应。小程序拆成13个原生页面，使用相同领域边界与适用于uni.request的Axios适配器。公共浏览不依赖登录状态恢复成功，下单成功不会因后台购物袋刷新失败而中断跳转。
+
+根pom.xml可直接由IDE导入；新增Windows Maven启动器，跟踪不含密钥的网页开发默认配置，默认local服务不再要求商户参数。首次随机管理员凭据只存本地私有文件，日志只输出文件路径。prod仍强制关闭开发能力并校验真实渠道配置。
 
 ## Java 21 编译器兼容性修复
 
 默认编译器改为完整JDK21提供的`javac`，原ECJ配置移到只可显式启用的`cloud-ecj` profile，避免IDE将项目默认导入为Eclipse编译器。已分别执行：
 
-- 官方Temurin21 JDK镜像内，默认profile的`clean verify`：确认主代码和测试代码均由`javac [release 21]`编译，22项测试全部通过，JAR打包成功。
-- JRE21云环境内，`-Pcloud-ecj clean verify`：确认ECJ按release21编译，22项测试全部通过，JAR打包成功。
+- 官方Temurin21 JDK镜像内，默认profile的根聚合`clean verify`：确认159个主代码文件和6个测试源码文件均由`javac [release 21]`编译，25项测试全部通过，JAR打包成功。
+- JRE21云环境内，`-Pcloud-ecj clean verify`：确认ECJ按release21编译，25项测试全部通过，JAR打包成功。
 - 默认构建的class文件major version为65，确认为Java21目标。
 
-证据见`docs/test-reports/java21-compilers.txt`。原文中的“Java21可运行JAR构建”现同时有两条编译路径验证。用户本地IDE仍需使用完整JDK21，并将其保留的旧Eclipse编译器选择改为Javac；具体步骤见`docs/development.md`。没有声称已在用户的本机IDE中执行重建。
+证据见`docs/test-reports/java21-compilers.txt`。用户本地IDE仍需使用完整JDK21，并将其保留的旧Eclipse编译器选择改为Javac；具体步骤见`docs/development.md`。没有声称已在用户本机IDE执行重建。Windows启动器已加入Windows GitHub Actions任务，当前Linux会话没有执行Windows平台验收。
 
 ## 后端关键断言
 

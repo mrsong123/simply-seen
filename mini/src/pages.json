@@ -4,14 +4,97 @@
       "path": "pages/index/index",
       "style": {
         "navigationBarTitleText": "素见好物",
-        "navigationBarBackgroundColor": "#f8f9f4",
-        "navigationBarTextStyle": "black",
         "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/catalog/points",
+      "style": {
+        "navigationBarTitleText": "积分礼遇",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/product/detail",
+      "style": {
+        "navigationBarTitleText": "商品详情",
+        "enablePullDownRefresh": false
+      }
+    },
+    {
+      "path": "pages/cart/index",
+      "style": {
+        "navigationBarTitleText": "购物袋",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/checkout/index",
+      "style": {
+        "navigationBarTitleText": "确认订单",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/orders/index",
+      "style": {
+        "navigationBarTitleText": "我的订单",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/orders/detail",
+      "style": {
+        "navigationBarTitleText": "订单详情",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/account/index",
+      "style": {
+        "navigationBarTitleText": "我的素见",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/addresses/index",
+      "style": {
+        "navigationBarTitleText": "收货地址",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/addresses/edit",
+      "style": {
+        "navigationBarTitleText": "编辑地址",
+        "enablePullDownRefresh": false
+      }
+    },
+    {
+      "path": "pages/promotion/index",
+      "style": {
+        "navigationBarTitleText": "分享美好",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/wallet/withdraw",
+      "style": {
+        "navigationBarTitleText": "佣金提现",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/legal/index",
+      "style": {
+        "navigationBarTitleText": "服务规则",
+        "enablePullDownRefresh": false
       }
     }
   ],
   "globalStyle": {
     "backgroundColor": "#f6f7f1",
+    "navigationBarBackgroundColor": "#f8f9f4",
     "navigationBarTextStyle": "black",
     "navigationBarTitleText": "素见好物"
   }

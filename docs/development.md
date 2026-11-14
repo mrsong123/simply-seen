@@ -1,5 +1,7 @@
 # Java 21 本地构建与 IDE 配置
 
+仓库根目录已有Maven聚合`pom.xml`，IDE可直接打开它并导入server模块；Windows提供`mvnw.cmd`。
+
 后端要求完整 JDK 21。JRE 只能运行 Java，不提供默认构建所需的 `javac`。默认 Maven 编译器为 `javac`，`release`固定为21；CI也使用完整JDK21和默认编译器。
 
 ## IntelliJ IDEA
@@ -51,3 +53,9 @@ Windows可直接在IDE的Maven面板依次执行`clean`和`verify`，或在终�
 ```
 
 该profile使用固定ECJ3.42.0和Plexus Eclipse编译适配器，仅改变本次Maven构建的编译器，不要求IDE采用Eclipse编译器。它没有自动激活条件，普通本地构建和CI仍使用`javac`。只启用profile不会升级IDE内置的旧Eclipse编译器。
+
+## 本地运行与首次登录
+
+直接运行`com.sujian.mall.Application`或执行`mvn -f server/pom.xml spring-boot:run`。默认local profile使用H2和演示商品，不需要微信商户号。首次管理员口令未设置时写入`data/bootstrap-admin.txt`；工作目录可能是仓库根或server，请以日志输出的绝对路径为准。日志不输出口令，已有数据库不会被重置。
+
+网页执行`npm ci --prefix web`后运行`npm run dev --prefix web`，跟踪的.env.development提供本机API默认配置。网页自定义地址在web/.env.local中设置。不要把生产.env.example直接复制成根.env用于本地启动；那会显式启用生产校验。

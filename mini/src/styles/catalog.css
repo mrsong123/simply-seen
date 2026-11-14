@@ -1,0 +1,211 @@
+.hero {
+  margin: 0;
+  background: #e9ecdf;
+  position: relative;
+  overflow: hidden;
+  height: 490rpx;
+  padding: 48rpx 40rpx;
+}
+
+.hero-title {
+  font-family: serif;
+  font-size: 66rpx;
+  line-height: 1.5;
+  letter-spacing: 4rpx;
+  position: relative;
+  z-index: 1;
+}
+
+.hero-note {
+  display: block;
+  font-size: 21rpx;
+  color: #8e9a80;
+  margin-top: 23rpx;
+  max-width: 330rpx;
+  line-height: 1.9;
+}
+
+.hero-image {
+  position: absolute;
+  width: 450rpx;
+  height: 480rpx;
+  right: -70rpx;
+  top: 25rpx;
+  transform: rotate(-9deg);
+}
+
+.hero-link {
+  display: block;
+  font-size: 21rpx;
+  margin-top: 24rpx;
+  color: #537046;
+  position: relative;
+  z-index: 1;
+}
+
+.search {
+  display: flex;
+  gap: 15rpx;
+  margin: 30rpx 30rpx 15rpx;
+  background: #fff;
+  border: 1rpx solid #e3e9da;
+  border-radius: 12rpx;
+  padding: 19rpx 24rpx;
+  font-size: 23rpx;
+  color: #8c9b7a;
+}
+
+.search input {
+  flex: 1;
+  font-size: 23rpx;
+}
+
+.categories {
+  white-space: nowrap;
+  padding: 15rpx 25rpx;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.categories > text {
+  display: inline-block;
+  font-size: 22rpx;
+  color: #929f81;
+  padding: 13rpx 21rpx;
+  margin-right: 10rpx;
+  border-radius: 9rpx;
+}
+
+.categories > text.active {
+  background: #e6eddb;
+  color: #4d6c3a;
+}
+
+.section-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 26rpx 33rpx;
+  font-size: 29rpx;
+  font-family: serif;
+}
+
+.section-title > text {
+  font-family: sans-serif;
+  font-size: 19rpx;
+  color: #9da88f;
+}
+
+.products {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 35rpx 22rpx;
+  padding: 0 30rpx;
+}
+
+.art {
+  height: 330rpx;
+  position: relative;
+  border-radius: 9rpx;
+  overflow: hidden;
+}
+
+.art image {
+  width: 100%;
+  height: 100%;
+}
+
+.tag {
+  position: absolute;
+  left: 15rpx;
+  top: 16rpx;
+  background: #ffffff88;
+  padding: 8rpx 12rpx;
+  border-radius: 5rpx;
+  font-size: 17rpx;
+  color: #849274;
+}
+
+.product-name {
+  font-size: 26rpx;
+  margin: 22rpx 0 10rpx;
+}
+
+.price {
+  font-size: 25rpx;
+  margin: 15rpx 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.price text {
+  font-size: 16rpx;
+  color: #8b9b79;
+}
+
+.bottom-note {
+  text-align: center;
+  letter-spacing: 4rpx;
+  font-size: 17rpx;
+  color: #9fab8f;
+  padding: 65rpx 20rpx 25rpx;
+}
+
+.bottom-note text {
+  display: block;
+  letter-spacing: 1rpx;
+  margin-top: 15rpx;
+  font-size: 18rpx;
+}
+
+.detail-art {
+  height: 660rpx;
+  margin: 0 20rpx;
+  border-radius: 12rpx;
+}
+
+.detail-art image {
+  width: 100%;
+  height: 100%;
+}
+
+.detail-price {
+  font-size: 48rpx;
+  margin: 30rpx 0;
+}
+
+.options {
+  display: flex;
+  gap: 15rpx;
+  flex-wrap: wrap;
+}
+
+.options > text {
+  border: 1rpx solid #dde5d4;
+  padding: 17rpx 22rpx;
+  border-radius: 9rpx;
+  font-size: 23rpx;
+  color: #879b73;
+}
+
+.options > text.active {
+  background: #eaf0e1;
+  border-color: #759263;
+  color: #466936;
+}
+
+.points-hero {
+  padding: 45rpx 35rpx;
+  background: #e9f0df;
+}
+
+.point-balance {
+  font-size: 53rpx;
+  margin: 25rpx 0;
+  color: #597b43;
+}
+
+.point-balance text {
+  font-size: 21rpx;
+}

@@ -1,0 +1,104 @@
+.data-panel {
+  background: #fff;
+  border: 1px solid #e4eadd;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.table-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 23px;
+}
+.table-toolbar > div {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.table-toolbar .search-field {
+  background: #fbfcf8;
+}
+.table-scroll {
+  overflow: auto;
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+  white-space: nowrap;
+  font-size: 11px;
+}
+th {
+  text-align: left;
+  font-weight: 400;
+  font-size: 10px;
+  color: #9ba88c;
+  padding: 15px 21px;
+  background: #f7f9f3;
+  border-top: 1px solid #eaf0e1;
+  border-bottom: 1px solid #eaf0e1;
+}
+td {
+  padding: 18px 21px;
+  border-bottom: 1px solid #eff3e9;
+  color: #76866b;
+}
+tbody tr:hover {
+  background: #fcfdf9;
+}
+tbody tr:last-child td {
+  border-bottom: 0;
+}
+.table-product {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+.table-product img {
+  width: 43px;
+  height: 49px;
+  object-fit: contain;
+  border-radius: 5px;
+}
+.table-product strong {
+  font-size: 11px;
+  font-weight: 500;
+  color: #5b704d;
+}
+.table-product small {
+  display: block;
+  font-size: 9px;
+  margin-top: 7px;
+  color: #9ba78d;
+}
+.table-actions {
+  text-align: right;
+}
+.table-actions button {
+  font-size: 10px;
+  margin-left: 12px;
+  white-space: nowrap;
+}
+.truncate-cell {
+  display: block;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.table-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid #eaf0e2;
+  padding: 13px 23px;
+  font-size: 9px;
+  color: #a2af93;
+}
+.table-footer > div {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+.reconcile-tabs {
+  margin-bottom: 20px;
+}

@@ -3,6 +3,8 @@ if (!process.env.E2E_BASE_URL)
   throw new Error("Set E2E_BASE_URL to the running web server");
 export default defineConfig({
   testDir: "./tests",
+  testMatch: "**/*.spec.ts",
+  testIgnore: ["**/unit/**", "**/support/**"],
   timeout: 60000,
   workers: 1,
   reporter: [["list"], ["html", { open: "never" }]],

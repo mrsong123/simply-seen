@@ -1,0 +1,121 @@
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin-bottom: 27px;
+}
+.metric-card {
+  padding: 23px;
+  background: #fff;
+  border: 1px solid #e7ecdf;
+  border-radius: 8px;
+}
+.metric-card > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #9ca98c;
+  font-size: 11px;
+}
+.metric-card > div svg {
+  color: #9baa89;
+}
+.metric-card > strong {
+  display: block;
+  font-size: 30px;
+  font-weight: 500;
+  color: #415836;
+  margin: 20px 0 13px;
+  letter-spacing: -1px;
+}
+.metric-card > small {
+  font-size: 9px;
+  color: #a6af9b;
+}
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 23px;
+}
+.dashboard-grid > .panel {
+  margin: 0;
+  padding: 25px;
+}
+.chart-panel {
+  min-height: 320px;
+}
+.chart-panel h3,
+.work-panel h3 {
+  font-size: 14px;
+  color: #5d7050;
+}
+.bar-chart {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 30px;
+  height: 200px;
+}
+.bar-column {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  text-align: center;
+  gap: 9px;
+  align-items: center;
+  font-size: 9px;
+  color: #9ba98a;
+}
+.bar-column > small {
+  font-size: 8px;
+  color: #81956d;
+}
+.bar-track {
+  height: 145px;
+  display: flex;
+  align-items: flex-end;
+  width: 60%;
+  max-width: 43px;
+}
+.bar-track > div {
+  width: 100%;
+  border-radius: 4px 4px 0 0;
+  background: linear-gradient(#a2b98d, #dbe6cc);
+}
+.work-panel > a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid #eff2e8;
+  font-size: 11px;
+  color: #718464;
+}
+.work-panel > a:last-child {
+  border: 0;
+}
+.work-panel > a > div {
+  flex: 1;
+}
+.work-panel > a strong {
+  font-weight: 500;
+  font-size: 17px;
+}
+.work-panel > a small {
+  display: block;
+  margin-top: 6px;
+  font-size: 9px;
+  color: #a5af98;
+}
+.todo-icon {
+  width: 32px;
+  height: 36px;
+  background: #f0f4e8;
+  display: grid;
+  place-items: center;
+  border-radius: 5px;
+  color: #8c9e7a;
+}
+.work-panel > p {
+  font-size: 10px;
+}

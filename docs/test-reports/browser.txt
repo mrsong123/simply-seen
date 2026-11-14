@@ -1,4 +1,7 @@
-Final Docker/Nginx/Java deployment browser validation
-  ✓  1 tests/commerce.spec.ts:7:1 › customer purchase, payment, fulfillment, refund and administration (20.5s)
-  ✓  2 tests/commerce.spec.ts:169:1 › mobile storefront has no horizontal overflow and navigation works (1.6s)
-  2 passed (24.1s)
+2026-11-14: Vue refactor browser validation
+commerce.spec.ts: real API; homepage.spec.ts: controlled failure/empty responses.
+  ✓  1 tests/commerce.spec.ts:4:1 › customer purchase, payment, fulfillment, refund and administration (15.8s)
+  ✓  2 tests/commerce.spec.ts:171:1 › mobile storefront has no horizontal overflow and navigation works (1.4s)
+  ✓  3 tests/homepage.spec.ts:2:1 › homepage shows loading and empty states while preserving the story link (954ms)
+  ✓  4 tests/homepage.spec.ts:40:1 › homepage retries a failed product request (1.4s)
+  4 passed (21.8s)

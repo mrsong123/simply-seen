@@ -2,6 +2,8 @@ package com.sujian.mall;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.sujian.mall.common.Problem;
+import com.sujian.mall.integration.logistics.LogisticsClient;
 import java.util.*;
 import org.junit.jupiter.api.Test;
 
@@ -9,7 +11,7 @@ class LogisticsTest {
   @Test
   void parsesProviderTracksWithoutExposingProviderCredentials() {
     var rows =
-        Logistics.tracks(
+        LogisticsClient.tracks(
             Map.of(
                 "status",
                 "200",
@@ -24,6 +26,7 @@ class LogisticsTest {
 
   @Test
   void noProviderResultCannotBeShownAsDelivered() {
-    assertThrows(Problem.class, () -> Logistics.tracks(Map.of("status", "201", "message", "暂无记录")));
+    assertThrows(
+        Problem.class, () -> LogisticsClient.tracks(Map.of("status", "201", "message", "暂无记录")));
   }
 }

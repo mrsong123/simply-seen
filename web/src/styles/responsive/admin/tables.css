@@ -1,0 +1,31 @@
+@media (max-width: 760px) {
+  .table-toolbar {
+    padding: 15px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .table-toolbar > .search-field {
+    flex-basis: 100%;
+  }
+  .table-toolbar > div {
+    justify-content: space-between;
+    width: 100%;
+  }
+  .table-toolbar .button {
+    font-size: 10px;
+    padding: 8px 10px;
+    min-height: 32px;
+  }
+  th,
+  td {
+    padding: 14px 15px;
+    font-size: 10px;
+  }
+  .table-footer {
+    padding: 13px;
+    font-size: 8px;
+  }
+  .table-footer > div {
+    gap: 8px;
+  }
+}

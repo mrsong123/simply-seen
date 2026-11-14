@@ -1,0 +1,9 @@
+2026-11-14: web unit tests
+ ✓ tests/unit/checkout.test.ts (3 tests) 14ms
+ ✓ tests/unit/configuration.test.ts (3 tests) 15ms
+ ✓ tests/unit/request.test.ts (5 tests) 39ms
+ ✓ tests/unit/guards.test.ts (7 tests) 12ms
+ ✓ tests/unit/admin-credentials.test.ts (3 tests) 7ms
+ Test Files  5 passed (5)
+      Tests  21 passed (21)
+   Duration  977ms (transform 394ms, setup 0ms, collect 931ms, tests 87ms, environment 1ms, prepare 476ms)

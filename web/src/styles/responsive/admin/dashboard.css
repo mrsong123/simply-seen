@@ -1,0 +1,49 @@
+@media (max-width: 1100px) {
+  .metrics {
+    gap: 12px;
+  }
+  .metric-card {
+    padding: 18px;
+  }
+  .metric-card > strong {
+    font-size: 25px;
+  }
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 760px) {
+  .metrics {
+    grid-template-columns: 1fr 1fr;
+    gap: 11px;
+    margin-bottom: 18px;
+  }
+  .metric-card {
+    padding: 18px 15px;
+  }
+  .metric-card > div {
+    font-size: 10px;
+  }
+  .metric-card > strong {
+    font-size: 27px;
+    margin: 16px 0 9px;
+  }
+  .metric-card > small {
+    font-size: 8px;
+  }
+  .metric-card > div svg {
+    width: 15px;
+  }
+  .dashboard-grid {
+    gap: 18px;
+  }
+  .dashboard-grid > .panel {
+    padding: 20px;
+  }
+  .bar-chart {
+    gap: 8px;
+  }
+  .bar-column > small {
+    font-size: 7px;
+  }
+}

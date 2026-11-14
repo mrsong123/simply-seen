@@ -1,22 +1,17 @@
 <script setup lang="ts">
-import { onMounted } from "vue";
-import { api, state } from "./api";
-onMounted(async () => {
-  try {
-    state.config = await api("/config");
-  } catch {}
-});
+import { useUiStore } from "@/store/ui";
+const ui = useUiStore();
 </script>
 <template>
-  <div class="loading-line" :class="{ active: state.pending > 0 }"></div>
+  <div class="loading-line" :class="{ active: ui.pending > 0 }"></div>
   <RouterView /><Transition name="toast"
     ><div
-      v-if="state.toast"
+      v-if="ui.toast"
       class="toast"
-      :class="{ error: state.error }"
+      :class="{ error: ui.error }"
       role="status"
     >
-      {{ state.toast }}
+      {{ ui.toast }}
     </div></Transition
   >
 </template>

@@ -2,15 +2,19 @@
 
 外部服务基址、回调地址、前端API入口和素材域名均从环境变量读取；内部业务路由在OpenAPI中定义。密钥只配置在服务端环境或只读文件，不能以`VITE_`前缀传入前端。仓库的`.env.example`只列名称与非秘密示例，不包含真实凭据。
 
-## 服务端（根目录.env或部署平台注入）
+## 服务端（部署环境变量或显式加载根目录.env）
+
+IDE直接运行使用Spring的local默认配置和Run Configuration环境变量；不会自动执行根.env。`scripts/run-server.sh`会显式加载根.env。生产模板的prod配置不能当作本地开箱配置。
 
 | 变量 | 用途与要求 |
 |---|---|
-| APP_DEV_MODE | 本地true；生产false。false会关闭测试登录、测试付款与测试出款并启用生产启动检查 |
+| SPRING_PROFILES_ACTIVE | 默认local供本地开发；生产明确设prod。IDE直接启动不自动读取根.env |
+| APP_DEV_MODE | local默认true；生产必须false。prod profile强制禁止模拟能力，并校验真实数据库/渠道配置 |
 | PORT | API监听端口，默认8080 |
 | DATABASE_URL | JDBC连接。生产必须jdbc:mysql；建议sslMode=VERIFY_IDENTITY并配置受信CA，Compose自签名内网可先使用REQUIRED并在生产替换为校验身份的证书配置 |
 | DATABASE_USER / DATABASE_PASSWORD | 数据库最小权限账号与凭据。迁移账号需DDL，运行权限可按运维策略分离 |
-| ADMIN_BOOTSTRAP_USER / ADMIN_BOOTSTRAP_PASSWORD | 首次启动创建管理员，密码至少12位。已有管理员后不重置密码，可移除引导凭据 |
+| ADMIN_BOOTSTRAP_USER / ADMIN_BOOTSTRAP_PASSWORD | 首次启动创建管理员。local未配置时生成强随机私有文件；生产首启必须提供至少12位口令。已有管理员后不重置密码 |
+| APP_BOOTSTRAP_CREDENTIALS_PATH | local初始凭据文件路径，默认启动工作目录data/bootstrap-admin.txt；日志提示绝对路径，不打印口令，不能把该文件提交Git |
 | SESSION_HOURS | 登录会话有效小时，默认168 |
 | ORDER_EXPIRE_MINUTES | 未支付订单有效分钟，默认15；超时不能跳过渠道确认 |
 | JOB_INTERVAL_MS | Outbox轮询间隔，默认10000毫秒 |
@@ -81,6 +85,8 @@
 | BACKUP_DIR | 备份脚本输出目录，应为受控加密挂载 |
 | RESTORE_FILE / RESTORE_CONFIRMED | 恢复文件及人工确认标记YES；仅恢复脚本读取 |
 | SUJIAN_TOOLS_DIR | Maven wrapper缓存目录，可选，默认项目.tools |
+| E2E_ADMIN_CREDENTIALS_PATH | 浏览器验收读取本地初始凭据文件的路径，仅测试进程使用，不下发前端 |
+| E2E_ADMIN_USERNAME / E2E_ADMIN_PASSWORD | 浏览器验收可显式提供管理账号，优先于本地文件；不要写入测试报告或Git |
 | TEST_DATABASE_URL | 集成测试目标；只允许专用可清空测试库，测试会删除业务表内数据 |
 
 网络目标：包管理源、微信登录域名、商户支付域名，以及自有API与素材域名。已有环境只放行包管理源时，应在环境设置添加`api.weixin.qq.com`、`api.mch.weixin.qq.com`及实际自有域名。配置文件保存不会证明这些域名已被当前运行实例放行。

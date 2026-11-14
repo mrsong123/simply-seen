@@ -2,7 +2,7 @@
 
 ## 上线步骤
 
-1. 在可信环境构建Java JAR及网页，确认测试通过。填写根`.env`、网页构建环境及小程序构建环境；所有示例域名换成已验证的真实地址。
+1. 在可信环境构建Java JAR及网页，确认测试通过。填写根`.env`，明确设置`SPRING_PROFILES_ACTIVE=prod`及`APP_DEV_MODE=false`，同时填写网页及小程序构建环境；所有示例域名换成已验证的真实地址。本地无配置启动的local profile不用于生产。
 2. MySQL8.4创建独立库，启用备份。`DATABASE_URL`应采用证书身份校验；根据实际基础设施配置JVM信任库。禁止使用生产库运行CommerceTest。
 3. 私钥、公钥放入只读`secrets/wechat`。首个管理员凭据使用独立随机口令，首次登录后更新密码，并创建财务和第二管理员。所有密钥不进镜像和Git。
 4. `docker compose up -d --build`启动。Flyway自动验证/执行迁移；迁移失败不能修改历史校验和绕过。

@@ -1,0 +1,132 @@
+@media (min-width: 1440px) {
+  .hero {
+    border-radius: 7px;
+  }
+}
+@media (max-width: 1100px) {
+  .hero-copy {
+    padding-left: 11%;
+  }
+  .hero h1 {
+    font-size: 54px;
+  }
+  .story-banner {
+    margin-left: 25px;
+    margin-right: 25px;
+  }
+  .story-copy {
+    padding: 40px;
+  }
+}
+@media (max-width: 760px) {
+  .hero {
+    grid-template-columns: 1fr 1fr;
+    min-height: 410px;
+  }
+  .hero-copy {
+    padding: 43px 12px 25px 25px;
+  }
+  .hero .eyebrow {
+    font-size: 7px;
+    letter-spacing: 1px;
+    gap: 5px;
+    white-space: nowrap;
+    margin-bottom: 22px;
+  }
+  .hero .eyebrow span {
+    width: 13px;
+  }
+  .hero h1 {
+    font-size: 38px;
+    letter-spacing: 1px;
+    margin-bottom: 18px;
+  }
+  .hero p {
+    font-size: 10px;
+    margin-bottom: 23px;
+  }
+  .hero .button {
+    font-size: 10px;
+    padding: 11px 13px;
+    gap: 10px;
+    min-height: 38px;
+  }
+  .hero-footnote {
+    margin-top: 30px;
+    font-size: 7px;
+    gap: 11px;
+    flex-wrap: wrap;
+  }
+  .hero-art > img {
+    object-fit: cover;
+    object-position: 42%;
+    transform: scale(1.2) rotate(-8deg);
+  }
+  .sun-circle {
+    width: 230px;
+    height: 230px;
+    top: 50px;
+    right: -70px;
+  }
+  .hero-art-caption {
+    left: 15px;
+    right: 20px;
+    bottom: 25px;
+  }
+  .hero-art-caption small {
+    font-size: 7px;
+    letter-spacing: 0;
+  }
+  .hero-art-caption strong {
+    font-size: 10px;
+    letter-spacing: 0.5px;
+  }
+  .circle-arrow {
+    width: 27px;
+    height: 27px;
+  }
+  .circle-arrow svg {
+    width: 15px;
+  }
+  .vertical-note {
+    font-size: 6px;
+    right: 11px;
+    top: 27px;
+    letter-spacing: 2px;
+  }
+  .promise-strip {
+    padding: 23px 15px;
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .promise-strip > div {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .promise-strip svg {
+    width: 20px;
+    height: 20px;
+  }
+  .promise-strip span {
+    font-size: 9px;
+    letter-spacing: 0;
+  }
+  .promise-strip small {
+    display: none;
+  }
+  .story-banner {
+    grid-template-columns: 1fr;
+    margin: 5px 22px 40px;
+  }
+  .story-illustration {
+    height: 240px;
+  }
+  .story-copy {
+    padding: 30px;
+  }
+  .story-copy h2 {
+    font-size: 28px;
+  }
+  .story-copy p {
+    font-size: 10px;
+  }
+}

@@ -1,0 +1,16 @@
+@media (max-width: 760px) {
+  .modal-backdrop {
+    padding: 18px;
+  }
+  .modal {
+    padding: 30px 24px;
+    border-radius: 12px;
+    max-height: 92vh;
+  }
+  .modal h2 {
+    font-size: 23px;
+  }
+  .refund-line .checkbox-label {
+    font-size: 10px;
+  }
+}

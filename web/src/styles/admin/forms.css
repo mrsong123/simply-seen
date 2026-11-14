@@ -1,0 +1,34 @@
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 20px;
+}
+.sku-form {
+  display: grid;
+  grid-template-columns: 1.3fr 1.2fr 1fr 1fr 1fr;
+  gap: 10px;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 10px;
+}
+.sku-form label {
+  font-size: 9px;
+  color: #93a181;
+}
+.sku-form input {
+  margin-top: 8px;
+  max-width: 100%;
+  min-width: 0;
+  width: 100%;
+  padding: 10px 7px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-size: 11px;
+}
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid var(--line);
+  padding-top: 23px;
+  margin-top: 25px;
+}

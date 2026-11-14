@@ -1,15 +1,6 @@
 import { test, expect } from "@playwright/test";
-import fs from "node:fs";
-const env = Object.fromEntries(
-  fs
-    .readFileSync("../.env", "utf8")
-    .split("\n")
-    .filter((x) => x.includes("=") && !x.startsWith("#"))
-    .map((x) => {
-      const i = x.indexOf("=");
-      return [x.slice(0, i), x.slice(i + 1).replace(/^"|"$/g, "")];
-    }),
-);
+import { readAdminCredentials } from "./support/admin-credentials";
+const credentials = readAdminCredentials();
 test("customer purchase, payment, fulfillment, refund and administration", async ({
   page,
   context,
@@ -20,6 +11,9 @@ test("customer purchase, payment, fulfillment, refund and administration", async
   await expect(
     page.getByRole("heading", { name: "少一些， 更好一些。" }),
   ).toBeVisible();
+  await expect(page.locator(".product-card")).toHaveCount(3);
+  await expect(page.locator(".product-card").nth(2)).toBeVisible();
+  await expect(page.getByRole("link", { name: "认识素见" })).toBeVisible();
   await page.screenshot({
     path: "../docs/screenshots/storefront-desktop.png",
     fullPage: true,
@@ -56,12 +50,8 @@ test("customer purchase, payment, fulfillment, refund and administration", async
   });
   const admin = await context.newPage();
   await admin.goto("/admin");
-  await admin
-    .getByLabel("账号", { exact: true })
-    .fill(env.ADMIN_BOOTSTRAP_USER);
-  await admin
-    .getByLabel("密码", { exact: true })
-    .fill(env.ADMIN_BOOTSTRAP_PASSWORD);
+  await admin.getByLabel("账号", { exact: true }).fill(credentials.username);
+  await admin.getByLabel("密码", { exact: true }).fill(credentials.password);
   await admin.getByRole("button", { name: "安全登录" }).click();
   await expect(admin.getByRole("heading", { name: "经营概览" })).toBeVisible();
   await admin.screenshot({
@@ -117,6 +107,9 @@ test("mobile storefront has no horizontal overflow and navigation works", async 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
   await expect(page.locator(".hero")).toBeVisible();
+  await expect(page.locator(".product-card")).toHaveCount(3);
+  await expect(page.locator(".product-card:visible")).toHaveCount(2);
+  await expect(page.getByRole("link", { name: "认识素见" })).toBeVisible();
   await page.screenshot({
     path: "../docs/screenshots/storefront-mobile.png",
     fullPage: true,

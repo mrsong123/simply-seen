@@ -1,0 +1,64 @@
+@media (max-width: 760px) {
+  .bag-layout {
+    grid-template-columns: 1fr;
+    gap: 25px;
+  }
+  .summary-card {
+    position: static;
+  }
+  .cart-image {
+    width: 90px;
+    height: 105px;
+  }
+  .cart-row {
+    gap: 17px;
+  }
+  .cart-desc h3 {
+    font-size: 13px;
+  }
+  .cart-desc p {
+    font-size: 10px;
+  }
+  .cart-desc strong {
+    margin-bottom: 10px;
+  }
+  .cart-desc .stepper button {
+    padding: 5px;
+  }
+  .address-option {
+    padding: 12px;
+  }
+  .order-card {
+    padding: 0 17px;
+  }
+  .order-card-head small {
+    display: block;
+    margin: 7px 0 0;
+    font-size: 8px;
+  }
+  .checkout-item {
+    gap: 12px;
+  }
+  .checkout-item img {
+    width: 50px;
+    height: 60px;
+  }
+  .checkout-item strong,
+  .checkout-item > span {
+    font-size: 11px;
+  }
+  .checkout-item p {
+    font-size: 9px;
+  }
+  .order-status {
+    gap: 15px;
+    padding: 22px;
+  }
+  .order-status h2 {
+    font-size: 21px;
+  }
+  .order-status p {
+    font-size: 9px;
+    word-break: break-all;
+  }
+}

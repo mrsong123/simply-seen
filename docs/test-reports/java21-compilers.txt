@@ -1,24 +1,26 @@
-Java 21 compiler compatibility validation
-Default build: official eclipse-temurin:21-jdk image, JDK javac
-Cloud build: JRE21 with explicitly activated cloud-ecj profile
-Both runs used clean verify to avoid reusing prior class files.
-
-Default javac
-[INFO] Compiling 14 source files with javac [debug parameters release 21] to target/classes
-[INFO] Compiling 3 source files with javac [debug parameters release 21] to target/test-classes
-[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.202 s -- in com.sujian.mall.WechatSecurityTest
-[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.007 s -- in com.sujian.mall.LogisticsTest
-[INFO] Tests run: 15, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 12.04 s -- in com.sujian.mall.CommerceTest
-[INFO] Tests run: 22, Failures: 0, Errors: 0, Skipped: 0
+2026-11-14: layered implementation compiler validation
+Default: official eclipse-temurin:21-jdk, root Maven reactor clean verify
+[INFO] Compiling 159 source files with javac [debug parameters release 21] to target/classes
+[INFO] Compiling 6 source files with javac [debug parameters release 21] to target/test-classes
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.314 s -- in com.sujian.mall.WechatSecurityTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 6.498 s -- in com.sujian.mall.LocalStartupTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.005 s -- in com.sujian.mall.LogisticsTest
+[INFO] Tests run: 15, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 9.549 s -- in com.sujian.mall.CommerceTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.030 s -- in com.sujian.mall.ArchitectureTest
+[INFO] Tests run: 25, Failures: 0, Errors: 0, Skipped: 0
+[INFO] mall ............................................... SUCCESS [ 24.316 s]
+[INFO] Simply Seen Workspace .............................. SUCCESS [  0.007 s]
 [INFO] BUILD SUCCESS
 
-Explicit cloud-ecj
+Explicit cloud-ecj: JRE21 with cloud-ecj profile, server clean verify
 [INFO] Compiling with eclipse [debug parameters release 21] to target/classes
 [INFO] Compiling with eclipse [debug parameters release 21] to target/test-classes
-[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.605 s -- in com.sujian.mall.WechatSecurityTest
-[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.007 s -- in com.sujian.mall.LogisticsTest
-[INFO] Tests run: 15, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 13.14 s -- in com.sujian.mall.CommerceTest
-[INFO] Tests run: 22, Failures: 0, Errors: 0, Skipped: 0
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.421 s -- in com.sujian.mall.WechatSecurityTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 7.007 s -- in com.sujian.mall.LocalStartupTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.004 s -- in com.sujian.mall.LogisticsTest
+[INFO] Tests run: 15, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 10.13 s -- in com.sujian.mall.CommerceTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.022 s -- in com.sujian.mall.ArchitectureTest
+[INFO] Tests run: 25, Failures: 0, Errors: 0, Skipped: 0
 [INFO] BUILD SUCCESS
 
-Compiled Application.class major version: 65 (Java 21).
+Java 21 class major version: 65. Windows execution is configured in CI but was not run in this Linux session.

@@ -1,0 +1,135 @@
+.history {
+  border-bottom: 1rpx solid #e9efdf;
+  padding: 10rpx 0 25rpx;
+}
+
+.history .row {
+  font-size: 22rpx;
+  margin: 19rpx 0 10rpx;
+}
+
+.history .sub {
+  font-size: 18rpx;
+}
+
+.login-card {
+  margin: 70rpx 35rpx;
+  background: #fff;
+  border-radius: 18rpx;
+  padding: 65rpx 40rpx;
+  text-align: center;
+}
+
+.login-card .mark {
+  margin-bottom: 35rpx;
+}
+
+.member-card {
+  display: flex;
+  gap: 25rpx;
+  align-items: center;
+  padding: 50rpx 35rpx;
+  background: #eaf0df;
+}
+
+.member-card > view:nth-child(2) {
+  flex: 1;
+}
+
+.member-card .title {
+  font-size: 36rpx;
+  margin: 8rpx 0;
+}
+
+.member-card .eyebrow {
+  font-size: 13rpx;
+  letter-spacing: 3rpx;
+  margin: 0;
+}
+
+.avatar {
+  width: 95rpx;
+  height: 95rpx;
+  border-radius: 50%;
+  background: #d6e3c8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 37rpx;
+  color: #7c9668;
+}
+
+.asset-grid {
+  display: flex;
+  gap: 18rpx;
+  margin: 25rpx 28rpx;
+}
+
+.asset-grid > view {
+  flex: 1;
+  background: #fff;
+  border: 1rpx solid #e2ead6;
+  border-radius: 12rpx;
+  padding: 24rpx 12rpx;
+  text-align: center;
+}
+
+.asset-grid > view > text {
+  font-size: 20rpx;
+  color: #8da17a;
+}
+
+.asset-grid > view > view {
+  font-size: 33rpx;
+  margin-top: 20rpx;
+  color: #547340;
+}
+
+.menu-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 26rpx 0;
+  border-bottom: 1rpx solid #ecf1e2;
+  font-size: 25rpx;
+  color: #768e62;
+}
+
+.menu-row:last-child {
+  border: 0;
+}
+
+.share-hero {
+  margin: 25rpx 28rpx;
+  padding: 45rpx 30rpx;
+  background: #e7efdb;
+  border-radius: 14rpx;
+  text-align: center;
+}
+
+.share-hero .title {
+  font-size: 40rpx;
+}
+
+.share-hero .sub {
+  font-size: 22rpx;
+  line-height: 2;
+}
+
+.code {
+  font-family: monospace;
+  font-size: 45rpx;
+  letter-spacing: 5rpx;
+  margin: 35rpx 0;
+  color: #5e7c47;
+}
+
+.share-hero > .link {
+  display: block;
+  margin-top: 27rpx;
+}
+
+.balance {
+  font-size: 62rpx;
+  margin: 25rpx 0;
+  color: #5e7b4a;
+}

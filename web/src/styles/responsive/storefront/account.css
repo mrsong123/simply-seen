@@ -1,0 +1,88 @@
+@media (max-width: 760px) {
+  .account-heading {
+    padding: 30px 20px 23px;
+  }
+  .account-heading h1 {
+    font-size: 26px;
+  }
+  .asset-grid {
+    gap: 10px;
+  }
+  .asset-card {
+    padding: 17px 13px;
+  }
+  .asset-card > svg {
+    width: 15px;
+    display: none;
+  }
+  .asset-card > span {
+    font-size: 10px;
+  }
+  .asset-card strong {
+    font-size: 22px;
+    margin-top: 13px;
+  }
+  .asset-card small {
+    font-size: 8px;
+  }
+  .member-card {
+    padding: 22px;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .avatar {
+    width: 45px;
+    height: 45px;
+    font-size: 20px;
+  }
+  .member-card h2 {
+    font-size: 21px;
+  }
+  .member-card span {
+    font-size: 9px;
+  }
+  .member-card small {
+    font-size: 7px;
+  }
+  .member-card .text-link {
+    font-size: 10px;
+  }
+  .account-links {
+    gap: 0 20px;
+  }
+  .account-links a {
+    font-size: 11px;
+    gap: 9px;
+  }
+  .account-links svg {
+    width: 17px;
+  }
+  .share-card {
+    padding: 30px 20px;
+  }
+  .share-card .eyebrow {
+    font-size: 7px;
+    letter-spacing: 1.5px;
+  }
+  .share-card h2 {
+    font-size: 25px;
+  }
+  .share-card p {
+    font-size: 10px;
+  }
+  .legal-page {
+    padding: 40px 25px 65px;
+  }
+  .legal-page h1 {
+    font-size: 28px;
+  }
+  .legal-page p {
+    font-size: 12px;
+  }
+  .address-card {
+    display: block;
+  }
+  .address-card .button-row {
+    margin-top: 14px;
+  }
+}

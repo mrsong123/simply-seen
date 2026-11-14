@@ -1,8 +1,12 @@
 package com.sujian.mall;
 
-import static com.sujian.mall.Db.*;
+import static com.sujian.mall.common.BusinessSupport.*;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.sujian.mall.common.*;
+import com.sujian.mall.config.Settings;
+import com.sujian.mall.job.OutboxJob;
+import com.sujian.mall.service.*;
 import java.util.*;
 import java.util.concurrent.*;
 import org.junit.jupiter.api.*;
@@ -38,17 +42,22 @@ class CommerceTest {
     }
   }
 
-  @Autowired Db d;
-  @Autowired Commerce shop;
-  @Autowired Finance f;
-  @Autowired Auth auth;
-  @Autowired Bootstrap bootstrap;
-  @Autowired Jobs jobs;
+  @Autowired BusinessSupport support;
+  @Autowired org.springframework.jdbc.core.JdbcTemplate jdbc;
+  TestDatabase d;
+  @Autowired CommerceService shop;
+  @Autowired FinanceService f;
+  @Autowired AuthService auth;
+  @Autowired BootstrapService bootstrap;
+  @Autowired OutboxJob jobs;
+  @Autowired MaintenanceService maintenance;
+  @Autowired ReconciliationService reconciliation;
   @Autowired PlatformTransactionManager tm;
   TransactionTemplate tx;
 
   @BeforeEach
   void reset() {
+    d = new TestDatabase(jdbc, support);
     tx = new TransactionTemplate(tm);
     tx.executeWithoutResult(
         t -> {
@@ -78,7 +87,7 @@ class CommerceTest {
                   "rule_version",
                   "admin_account",
                   "rate_limit")) d.exec("DELETE FROM " + table);
-          bootstrap.run(null);
+          bootstrap.initialize();
         });
   }
 
@@ -283,7 +292,7 @@ class CommerceTest {
     var o = order(u, 1, 0);
     pay(o);
     d.exec("UPDATE shop_order SET expires_at=0 WHERE id=?", s(o, "id"));
-    jobs.maintain();
+    maintenance.maintain();
     assertEquals("PAID", s(shop.order(u, s(o, "id")), "state"));
     assertEquals(99, d.count("SELECT stock FROM sku WHERE id=10"));
   }
@@ -394,10 +403,10 @@ class CommerceTest {
     tx.executeWithoutResult(t -> shop.asset(u, "points", 20, "grant", null, "测试"));
     var o = order(u, 1, 5);
     pay(o);
-    var batch = jobs.reconcile(100);
+    var batch = reconciliation.reconcile(100);
     assertEquals(0, n(batch, "diff_count"));
     d.exec("UPDATE member SET available=123 WHERE id=?", u);
-    batch = jobs.reconcile(100);
+    batch = reconciliation.reconcile(100);
     assertEquals(1, n(batch, "diff_count"));
   }
 
