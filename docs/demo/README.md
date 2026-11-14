@@ -7,7 +7,7 @@
 - [下载完整录像（约92秒，MP4，带中文步骤字幕）](https://github.com/mrsong123/simply-seen/raw/refs/heads/main/docs/demo/simply-seen-demo.mp4)
 - [下载离线演示页（单文件，内含录像、章节跳转和截图）](https://github.com/mrsong123/simply-seen/raw/refs/heads/main/docs/demo/simply-seen-demo.html)：下载后用浏览器打开即可观看。
 
-仓库为私有时，需要先登录有访问权限的GitHub账号。录像已删除等待片段，未录制管理员口令。最终MP4全文件解码通过，离线播放器和章节跳转已用浏览器检查。
+仓库为私有时，需要先登录有访问权限的GitHub账号。录像已删除等待片段，未录制管理员口令。最终MP4全文件解码通过；同一单文件播放器已通过本地HTTP服务在浏览器中验证播放和章节跳转。当前受管浏览器禁止file协议，因此没有在该浏览器验证直接打开本地HTML文件。
 
 ## 本次实际流程
 
