@@ -7,10 +7,9 @@ import Icon from "@/components/common/Icon.vue";
 import AdminPageHeader from "@/components/admin/AdminPageHeader.vue";
 import AdminDataTable from "@/components/admin/AdminDataTable.vue";
 import IssueResolutionDialog from "@/components/admin/IssueResolutionDialog.vue";
-const { data, loading, busy, load, run } = useAdminResource<any>(() =>
-  adminApi.getReconciliation(),
-);
 const tab = ref<"batches" | "issues" | "outbox">("batches");
+const kind = computed(() => tab.value === "batches" ? "reconcile-batches" as const : tab.value);
+const { data, loading, error, busy, load, run } = useAdminResource<any[]>(() => Promise.resolve([]), kind);
 const selected = ref<any>(null);
 const tabs = [
   ["batches", "对账批次"],
@@ -41,7 +40,7 @@ const fieldSets: Record<string, AdminColumn[]> = {
     ["last_error", "最近错误"],
   ],
 };
-const rows = computed(() => data.value?.[tab.value] || []),
+const rows = computed(() => data.value || []),
   columns = computed(() => fieldSets[tab.value]);
 async function reconcile() {
   await run(async () => {
@@ -75,6 +74,8 @@ function saved() {
     :columns="columns"
     title="对账与异常"
     :loading="loading"
+    :error="error"
+    @retry="load"
     icon="Shield"
     ><template #actions="{ row }"
       ><button

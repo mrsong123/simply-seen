@@ -35,6 +35,8 @@ public final class TradeRequests {
 
   public record Withdrawal(@NotNull @Positive Long amountFen) implements RequestDto {}
 
+  public record Prepay(@Pattern(regexp = "MINI_PROGRAM|NATIVE|H5") String channel) {}
+
   public record Shipment(
       @NotBlank @Size(max = 80) String carrier,
       @NotBlank @Pattern(regexp = "[A-Za-z0-9-]{5,80}") String trackingNo)

@@ -11,8 +11,9 @@ import FinanceReviewDialog from "@/components/admin/FinanceReviewDialog.vue";
 import ConfirmActionDialog from "@/components/admin/ConfirmActionDialog.vue";
 const auth = useAuthStore(),
   settings = useConfigStore();
-const { data, loading, busy, load, run } = useAdminResource<any[]>(() =>
+const { data, loading, error, busy, load, run } = useAdminResource<any[]>(() =>
   adminApi.getWithdrawals(),
+  "withdrawals",
 );
 const rows = computed(() => data.value || []),
   isAdmin = computed(
@@ -54,6 +55,8 @@ async function confirmOperation() {
     :columns="adminDefinitions.withdrawals.columns!"
     title="提现与出款"
     :loading="loading"
+    :error="error"
+    @retry="load"
     icon="Wallet"
     ><template #actions="{ row }"
       ><button
@@ -64,6 +67,8 @@ async function confirmOperation() {
         财务复核</button
       ><button
         v-if="row.state === 'APPROVED' && isAdmin"
+        :disabled="String(row.reviewer) === String(auth.adminProfile?.id)"
+        :title="String(row.reviewer) === String(auth.adminProfile?.id) ? '需另一名管理员执行' : '执行出款'"
         class="text-link"
         @click="openConfirmation(row, 'execute')"
       >

@@ -1,8 +1,25 @@
-2026-11-14: phone login, identity and transaction browser validation
-account-auth.spec.ts and commerce.spec.ts: actual API; homepage.spec.ts: controlled failure/empty response tests.
-  ✓  1 tests/account-auth.spec.ts:83:1 › real phone login, masked identity persistence and binding preserve existing membership (1.1m)
-  ✓  2 tests/commerce.spec.ts:4:1 › customer purchase, payment, fulfillment, refund and administration (15.5s)
-  ✓  3 tests/commerce.spec.ts:171:1 › mobile storefront has no horizontal overflow and navigation works (1.2s)
-  ✓  4 tests/homepage.spec.ts:2:1 › homepage shows loading and empty states while preserving the story link (1.1s)
-  ✓  5 tests/homepage.spec.ts:40:1 › homepage retries a failed product request (1.2s)
-  5 passed (1.5m)
+2026-11-19 (America/Los_Angeles): final web source browser validation
+Chromium; 1 worker; frontend http://127.0.0.1:5173; API http://127.0.0.1:8080.
+Source includes explicit category/status/role form labels and server-search response synchronization.
+Credentials were loaded from the local acceptance credential file; no credentials are included in this report.
+
+Actual local backend: account-auth.spec.ts, admin-actions.spec.ts and commerce.spec.ts.
+Controlled API responses: homepage.spec.ts, member-records.spec.ts and web-payment.spec.ts.
+Controlled web payment cases validate QR/H5/expiry UI; they do not certify real merchant payment or funds settlement.
+
+  ✓   1 tests/account-auth.spec.ts:83:1 › real phone login, masked identity persistence and binding preserve existing membership (1.1m)
+  ✓   2 tests/admin-actions.spec.ts:37:1 › admin catalogue, role gates, independent approval, account lifecycle and durable search (15.8s)
+  ✓   3 tests/commerce.spec.ts:4:1 › customer purchase, payment, fulfillment, refund and administration (13.6s)
+  ✓   4 tests/commerce.spec.ts:171:1 › mobile storefront has no horizontal overflow and navigation works (1.5s)
+  ✓   5 tests/homepage.spec.ts:2:1 › homepage shows loading and empty states while preserving the story link (1.3s)
+  ✓   6 tests/homepage.spec.ts:40:1 › homepage retries a failed product request (1.8s)
+  ✓   7 tests/member-records.spec.ts:2:1 › member asset filters and monthly awards use durable paged endpoints (1.8s)
+  ✓   8 tests/web-payment.spec.ts:97:1 › production native payment renders a real QR and waits for backend confirmation (1.7s)
+  ✓   9 tests/web-payment.spec.ts:132:1 › configured mobile H5 flow follows the secure channel URL (1.6s)
+  ✓  10 tests/web-payment.spec.ts:164:1 › expired orders block a new payment but retain result queries and cancellation (1.6s)
+
+  10 passed (1.8m)
+
+Same final source checks:
+  npm run test:unit --prefix web: 11 files passed; 55 tests passed (2.14s).
+  npm run build --prefix web: vue-tsc --noEmit and Vite build passed (Vite 4.82s).

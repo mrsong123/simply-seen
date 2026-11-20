@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import ResourceState from "@/components/common/ResourceState.vue";
+import { useViewResource } from "@/composables/useViewResource";
 import Icon from "@/components/common/Icon.vue";
 import { money, date, label } from "@/utils/format";
 import { ref, computed, watch } from "vue";
@@ -15,25 +17,24 @@ const route = useRoute(),
   cart = useCartStore(),
   config = useConfigStore(),
   ui = useUiStore();
-const product = ref<any>(null),
-  sku = ref(0),
+const { data: product, loading, error, load: loadProduct } = useViewResource<any>(
+  () => catalogApi.getProduct(String(route.params.id)), null, false,
+);
+const sku = ref(0),
   qty = ref(1);
 const selectedSku = computed(() =>
   product.value?.skus.find((s: any) => s.id === sku.value),
 );
 const rules = computed(() => config.rules);
 const { busy, run } = useAction();
-watch(
-  () => route.params.id,
-  async (id) => {
-    try {
-      product.value = await catalogApi.getProduct(String(id));
-      sku.value = product.value.skus[0]?.id || 0;
-      qty.value = 1;
-    } catch {}
-  },
-  { immediate: true },
-);
+async function load() {
+  product.value = null;
+  if (await loadProduct()) {
+    sku.value = product.value.skus.find((item: any) => item.stock > 0)?.id || product.value.skus[0]?.id || 0;
+    qty.value = 1;
+  }
+}
+watch(() => route.params.id, load, { immediate: true });
 async function addCart(buy = false) {
   if (!auth.member) {
     ui.openLogin();
@@ -47,7 +48,8 @@ async function addCart(buy = false) {
 }
 </script>
 <template>
-  <template v-if="product"
+  <ResourceState :loading="loading" :error="error" @retry="load" />
+  <template v-if="product && !error"
     ><section class="detail-layout">
       <div class="detail-art" :style="{ background: product.color }">
         <img :src="product.image" :alt="product.name" />
@@ -99,7 +101,7 @@ async function addCart(buy = false) {
           @click="addCart()"
         >
           加入购物袋 <Icon name="ShoppingBag" :size="18" /></button
-        ><button class="button full" @click="addCart(true)">立即选购</button>
+        ><button class="button full" :disabled="busy || !selectedSku?.stock" @click="addCart(true)">立即选购</button>
         <div class="detail-promises">
           <span><Icon name="Shield" :size="15" /> 售后保障</span
           ><span

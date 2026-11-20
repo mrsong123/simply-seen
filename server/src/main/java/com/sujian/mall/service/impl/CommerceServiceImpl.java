@@ -116,6 +116,10 @@ public class CommerceServiceImpl implements CommerceService {
     return paymentService.prepay(uid, no);
   }
 
+  public Object prepay(long uid, String no, String channel, String clientIp) {
+    return paymentService.prepay(uid, no, channel, clientIp);
+  }
+
   public void synchronizePayment(String no) {
     paymentService.synchronizePayment(no);
   }

@@ -11,8 +11,9 @@ import AccountEditor from "@/components/admin/AccountEditor.vue";
 import PasswordDialog from "@/components/admin/PasswordDialog.vue";
 import ConfirmActionDialog from "@/components/admin/ConfirmActionDialog.vue";
 const auth = useAuthStore();
-const { data, loading, load } = useAdminResource<any[]>(() =>
+const { data, loading, error, load } = useAdminResource<any[]>(() =>
   adminApi.getAccounts(),
+  "accounts",
 );
 const rows = computed(() => data.value || []);
 const editor = ref(false),
@@ -36,6 +37,8 @@ function saved() {
     :columns="adminDefinitions.accounts.columns!"
     title="账号与权限"
     :loading="loading"
+    :error="error"
+    @retry="load"
     icon="Users"
     ><template #actions="{ row }"
       ><template v-if="String(row.id) !== String(ownId)"

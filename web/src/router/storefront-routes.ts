@@ -80,6 +80,12 @@ export const storefrontRoutes: RouteRecordRaw[] = [
         meta: { requiresMember: true },
       },
       {
+        path: "awards",
+        name: "awards",
+        component: () => import("@/views/storefront/AwardsView.vue"),
+        meta: { requiresMember: true },
+      },
+      {
         path: "withdraw",
         name: "withdraw",
         component: () => import("@/views/storefront/WithdrawView.vue"),

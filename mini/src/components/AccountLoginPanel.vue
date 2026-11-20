@@ -5,6 +5,7 @@ import { useSessionStore } from "../store/session";
 import { useTask } from "../utils/useTask";
 import AccountConsent from "./AccountConsent.vue";
 import PhoneAccessForm from "./PhoneAccessForm.vue";
+import InviteCodeField from "./InviteCodeField.vue";
 const emit = defineEmits<{ success: [] }>();
 defineOptions({ options: { styleIsolation: "apply-shared" } });
 const app = useAppStore(),
@@ -35,6 +36,7 @@ async function login(development = false) {
     <text class="caption account-login-help"
       >已有微信账户，请先微信登录后绑定手机号，再使用手机号登录。新号码首次登录会创建独立账户，积分、资金和邀请归属不会自动合并。</text
     >
+    <InviteCodeField />
     <AccountConsent v-model="accepted" />
     <PhoneAccessForm
       v-if="app.config?.phoneLoginEnabled"

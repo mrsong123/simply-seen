@@ -23,7 +23,10 @@ public interface ShopOrderMapper extends BaseMapper<ShopOrder> {
   List<Map<String, Object>> selectRecentOrderTrend();
 
   @Select(
-      "SELECT o.*,m.name AS member_name FROM shop_order o JOIN member m ON m.id=o.member_id ORDER"
+      "SELECT o.id,o.member_id,o.state,o.payment_state,o.item_amount,o.freight,o.points_used,"
+          + "o.cash_due,o.cash_refunded,o.points_refunded,o.address_snapshot,o.rule_snapshot,o.remark,"
+          + "o.transaction_id,o.expires_at,o.created_at,o.paid_at,o.completed_at,o.carrier,"
+          + "o.tracking_no,o.payment_channel,m.name AS member_name FROM shop_order o JOIN member m ON m.id=o.member_id ORDER"
           + " BY o.created_at DESC LIMIT 200")
   List<Map<String, Object>> selectAdminOrders();
 
@@ -73,6 +76,17 @@ public interface ShopOrderMapper extends BaseMapper<ShopOrder> {
 
   @Update("UPDATE shop_order SET payment_state='PREPAY' WHERE id=#{id} AND state='CREATED'")
   int markPrepay(@Param("id") String id);
+
+  @Update("UPDATE shop_order SET payment_state='PREPAY',payment_channel=#{channel},payment_app_id=#{appId}"
+      + " WHERE id=#{id} AND state='CREATED' AND payment_state<>'CLOSING'")
+  int markPrepayChannel(@Param("id") String id, @Param("channel") String channel,
+      @Param("appId") String appId);
+
+  @Update("UPDATE shop_order SET payment_state='CLOSING' WHERE id=#{id} AND state='CREATED'")
+  int markPaymentClosing(@Param("id") String id);
+
+  @Update("UPDATE shop_order SET payment_payer_openid=#{openid} WHERE id=#{id} AND payment_state='SUCCESS'")
+  int recordPaymentPayer(@Param("id") String id, @Param("openid") String openid);
 
   @Update(
       "UPDATE shop_order SET payment_state='PREPAY' WHERE id=#{id} AND state='CREATED' AND"

@@ -6,6 +6,7 @@ import { useCartStore } from "@/store/cart";
 import { useConfigStore } from "@/store/config";
 import StoreHeader from "@/components/storefront/StoreHeader.vue";
 import StoreFooter from "@/components/storefront/StoreFooter.vue";
+import ResourceState from "@/components/common/ResourceState.vue";
 import LoginDialog from "@/components/storefront/LoginDialog.vue";
 const auth = useAuthStore(),
   cart = useCartStore(),
@@ -39,7 +40,7 @@ watch(
       为生活做减法，为美好留余地。<span>精选好物 · 用心相伴</span>
     </div>
     <StoreHeader />
-    <main><RouterView /></main>
+    <main><ResourceState v-if="config.error" :error="config.error" @retry="config.load(true).catch(() => {})" /><RouterView /></main>
     <StoreFooter /><LoginDialog />
   </div>
 </template>

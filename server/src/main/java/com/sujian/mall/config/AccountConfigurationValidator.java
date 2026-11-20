@@ -2,53 +2,37 @@ package com.sujian.mall.config;
 
 import com.sujian.mall.common.Problem;
 import java.net.URI;
-import java.util.Base64;
-import java.util.List;
+import java.util.*;
 
-/** Validate real SMS/identity configuration before accepting production traffic. */
 public final class AccountConfigurationValidator {
   private AccountConfigurationValidator() {}
-
   public static void validate(Settings settings) {
     if (settings.dev()) return;
+    var errors = new ArrayList<String>();
+    collect(settings, errors);
+    if (!errors.isEmpty()) throw new Problem(503, "ACCOUNT_CONFIGURATION", String.join("；", errors));
+  }
+  static void collect(Settings settings, List<String> errors) {
+    if (settings.dev()) return;
     for (String prefix : List.of("SMS", "IDENTITY")) {
-      Problem.require(
-          settings.get(prefix + "_PROVIDER", "aliyun").equals("aliyun"),
-          "ACCOUNT_PROVIDER_CONFIGURATION",
-          "生产环境必须使用真实阿里云短信和实名认证服务");
+      if (!settings.get(prefix + "_PROVIDER", "aliyun").trim().equalsIgnoreCase("aliyun"))
+        errors.add(prefix + "_PROVIDER生产环境必须为aliyun");
       for (String suffix : List.of("ACCESS_KEY_ID", "ACCESS_KEY_SECRET", "REGION_ID"))
-        settings.required(prefix + "_" + suffix);
-      secureEndpoint(settings.required(prefix + "_API_URL"));
+        ConfigurationChecks.required(settings, prefix + "_" + suffix, errors);
+      String name = prefix + "_API_URL";
+      ConfigurationChecks.https(settings, name, errors);
+      try {
+        String value = settings.get(name, "");
+        if (!value.isBlank() && URI.create(value).getQuery() != null) errors.add(name + "不能包含查询参数");
+      } catch (IllegalArgumentException ignored) { /* Address error is already included above. */ }
     }
-    settings.required("SMS_SIGN_NAME");
-    settings.required("SMS_TEMPLATE_CODE");
-    validateDataKey(settings.required("ACCOUNT_DATA_KEY"));
-  }
-
-  private static void secureEndpoint(String value) {
-    try {
-      URI endpoint = URI.create(value);
-      Problem.require(
-          "https".equals(endpoint.getScheme())
-              && endpoint.getHost() != null
-              && endpoint.getUserInfo() == null
-              && endpoint.getFragment() == null
-              && endpoint.getQuery() == null,
-          "INSECURE_ENDPOINT",
-          "短信和实名认证接口必须为不含用户信息、查询参数及片段的HTTPS地址");
-    } catch (IllegalArgumentException error) {
-      throw new Problem(503, "INSECURE_ENDPOINT", "短信或实名认证接口地址无效");
-    }
-  }
-
-  private static void validateDataKey(String value) {
-    try {
-      Problem.require(
-          Base64.getDecoder().decode(value).length == 32,
-          "ACCOUNT_KEY_CONFIGURATION",
-          "ACCOUNT_DATA_KEY必须为Base64编码的32字节随机密钥");
-    } catch (IllegalArgumentException error) {
-      throw new Problem(503, "ACCOUNT_KEY_CONFIGURATION", "ACCOUNT_DATA_KEY编码无效");
+    ConfigurationChecks.required(settings, "SMS_SIGN_NAME", errors);
+    ConfigurationChecks.required(settings, "SMS_TEMPLATE_CODE", errors);
+    String key = ConfigurationChecks.required(settings, "ACCOUNT_DATA_KEY", errors);
+    if (!key.isBlank()) {
+      try {
+        if (Base64.getDecoder().decode(key).length != 32) throw new IllegalArgumentException();
+      } catch (IllegalArgumentException error) { errors.add("ACCOUNT_DATA_KEY必须为Base64编码的32字节随机密钥"); }
     }
   }
 }

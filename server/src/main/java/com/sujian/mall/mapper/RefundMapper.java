@@ -62,6 +62,9 @@ public interface RefundMapper extends BaseMapper<Refund> {
   @Update("UPDATE refund SET state='ABNORMAL' WHERE id=#{id} AND state<>'SUCCESS'")
   int updateForRefundResult(@Param("id") String id);
 
+  @Update("UPDATE refund SET state='CLOSED',channel_id=#{channelId} WHERE id=#{id} AND state<>'SUCCESS'")
+  int closeByChannel(@Param("id") String id, @Param("channelId") String channelId);
+
   @Select("SELECT * FROM refund WHERE state='SUCCESS' AND amount>0 ORDER BY created_at")
   List<Map<String, Object>> listForReconcile();
 

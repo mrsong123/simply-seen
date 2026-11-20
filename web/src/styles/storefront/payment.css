@@ -1,0 +1,6 @@
+.web-payment { text-align: center; }
+.web-payment h2 { margin: 14px 0; }
+.web-payment .payment-qr { display: block; width: min(280px, 100%); height: auto; margin: 14px auto; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+.web-payment .button-row { justify-content: center; flex-wrap: wrap; margin-top: 20px; }
+.web-payment .notice { text-align: left; }
+.web-payment .error { color: #8f3932; }

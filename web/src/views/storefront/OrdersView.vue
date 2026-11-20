@@ -3,29 +3,21 @@ import Icon from "@/components/common/Icon.vue";
 import { money, date, label } from "@/utils/format";
 import { ref, computed, onMounted } from "vue";
 import { orderApi } from "@/api/order";
+import { useMemberRecords } from "@/composables/useMemberRecords";
+import PageNavigation from "@/components/common/PageNavigation.vue";
+import ResourceState from "@/components/common/ResourceState.vue";
 import AccountHeader from "@/components/storefront/AccountHeader.vue";
-const orders = ref<any[]>([]),
-  orderTab = ref("ALL"),
-  loaded = ref(false);
-const displayedOrders = computed(() =>
-  orderTab.value === "ALL"
-    ? orders.value
-    : orders.value.filter((o) => o.state === orderTab.value),
-);
-onMounted(async () => {
-  try {
-    orders.value = await orderApi.getOrders();
-  } catch {
-    orders.value = [];
-  } finally {
-    loaded.value = true;
-  }
-});
+const records = useMemberRecords<any>("orders");
+const { items: displayedOrders, loading, error, loaded, load } = records;
+const orderTab = computed(() => records.state.value || "ALL");
+function selectTab(value: string) { records.setState(value === "ALL" ? "" : value); }
 </script>
 <template>
   <AccountHeader title="我的订单" />
   <section class="section narrow">
-    <div class="category-pills order-tabs">
+    <label class="input-label">查找订单<input :value="records.search.value" aria-label="搜索我的订单" @input="records.setSearch(($event.target as HTMLInputElement).value)" /></label>
+    <ResourceState :loading="loading" :error="error" @retry="load" />
+    <div v-if="!error" class="category-pills order-tabs">
       <button
         v-for="t in [
           'ALL',
@@ -37,7 +29,7 @@ onMounted(async () => {
         ]"
         :key="t"
         :class="{ active: orderTab === t }"
-        @click="orderTab = t"
+        @click="selectTab(t)"
       >
         {{ t === "ALL" ? "全部订单" : label(t) }}
       </button>
@@ -70,7 +62,8 @@ onMounted(async () => {
           >查看详情 <Icon name="ArrowRight" :size="16"
         /></span></div
     ></RouterLink>
-    <div v-if="loaded && !displayedOrders.length" class="empty-state">
+    <PageNavigation :records="records" label="订单" />
+    <div v-if="loaded && !error && !loading && !displayedOrders.length" class="empty-state">
       <Icon name="Package" :size="40" />
       <h3>这里还没有订单</h3>
       <RouterLink to="/catalog" class="text-link"

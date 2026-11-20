@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import ResourceState from "@/components/common/ResourceState.vue";
+import { useMemberRecords } from "@/composables/useMemberRecords";
+import PageNavigation from "@/components/common/PageNavigation.vue";
 import Icon from "@/components/common/Icon.vue";
 import { money, date, label } from "@/utils/format";
 import { ref, computed, onMounted } from "vue";
@@ -21,16 +24,16 @@ const requirements = computed(() =>
 const blocked = computed(
   () => requirements.value.needsIdentity || requirements.value.needsWechat,
 );
-const withdrawals = ref<any[]>([]),
-  withdrawAmount = ref("");
+const records = useMemberRecords<any>("withdrawals");
+const { items: withdrawals, loading, error } = records;
+async function load() { await auth.fetchMemberProfile(); await records.load(); }
+onMounted(() => auth.fetchMemberProfile().catch(() => {}));
+const withdrawAmount = ref("");
+const open = computed(() => config.config.devMode || config.config.transferEnabled);
 let requestKey = createRequestKey();
 const { busy, run } = useAction();
-async function load() {
-  await auth.fetchMemberProfile();
-  withdrawals.value = await memberApi.getWithdrawals();
-}
-onMounted(() => load().catch(() => {}));
 async function withdraw() {
+  if (!open.value) { ui.message("提现服务当前尚未开放", true); return; }
   if (blocked.value) {
     ui.message("请先完成实名认证及微信绑定", true);
     return;
@@ -57,6 +60,8 @@ async function withdraw() {
   <AccountHeader title="佣金提现" /><template v-if="profile"
     ><section class="section bag-layout">
       <div class="panel">
+        <ResourceState :loading="loading" :error="error" @retry="load" />
+        <p v-if="!open" class="notice">提现服务当前尚未开放，历史申请仍可查看。</p>
         <div class="eyebrow">YOUR EARNINGS</div>
         <h2 class="balance">¥{{ money(profile.available) }}</h2>
         <p class="muted">
@@ -74,14 +79,14 @@ async function withdraw() {
             v-model="withdrawAmount"
             inputmode="decimal"
             placeholder="请输入提现金额"
-            :disabled="blocked || busy"
+            :disabled="!open || blocked || busy"
         /></label>
         <p class="caption left">
           提现需经财务审核及另一名管理员执行；税额按审核后的适用税务依据确定，渠道成功前不会标记为到账。
         </p>
         <button
           class="button dark"
-          :disabled="blocked || busy || !withdrawAmount"
+          :disabled="!open || blocked || busy || !withdrawAmount || !!error"
           @click="withdraw"
         >
           提交提现申请 <Icon name="ArrowRight" :size="17" />
@@ -89,6 +94,7 @@ async function withdraw() {
       </div>
       <div class="panel">
         <h3>提现记录</h3>
+        <select v-if="records.states.value.length" :value="records.state.value" aria-label="提现状态" @change="records.setState(($event.target as HTMLSelectElement).value)"><option value="">全部状态</option><option v-for="state in records.states.value" :key="state" :value="state">{{ label(state) }}</option></select>
         <div v-for="r in withdrawals" :key="r.id" class="withdraw-history">
           <div class="summary-line">
             <strong>¥{{ money(r.gross) }}</strong
@@ -101,7 +107,8 @@ async function withdraw() {
             请在微信小程序内确认收款。
           </p>
         </div>
-        <p v-if="!withdrawals.length" class="muted">暂无提现记录。</p>
+        <PageNavigation :records="records" label="提现" />
+        <p v-if="!loading && !error && !withdrawals.length" class="muted">暂无提现记录。</p>
       </div>
     </section></template
   >

@@ -1,0 +1,10 @@
+Packaged JAR: automatic root .env discovery and server-subdirectory parent discovery: passed
+UTF-8 BOM/CRLF, Chinese values, ampersands and quoted JSON preserved: passed
+Dollar command substitutions and backticks treated as data, never executed: passed
+Relative ADMIN_BOOTSTRAP_PASSWORD_FILE and ACCOUNT_DATA_KEY_FILE (CRLF-terminated): passed
+One datasource/account location across root and server-directory restarts: passed
+Pre-restart OTP consumed after restart using the configured stable encryption key: passed
+Process environment overrides file values without changing the source .env: passed
+No dotenv: pure process ACCOUNT/ADMIN/SUPPORT/PRIVACY file aliases and PORT_FILE listening: passed
+Configured passwords and encryption keys absent from application logs: passed
+No application source changes, real SMS, real identity queries or money movement were required.

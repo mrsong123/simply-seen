@@ -58,7 +58,10 @@ public class CatalogAdminOperations {
 
   public Object adminProducts() {
     var rows = productMapper.listForAdminProducts();
-    for (var p : rows) p.put("skus", skuMapper.selectCatalogSkus(n(p, "id")));
+    for (var p : rows) {
+      p.put("skus", skuMapper.selectCatalogSkus(n(p, "id")));
+      p.put("retired_skus", skuMapper.selectRetiredSkus(n(p, "id")));
+    }
     return rows;
   }
 
@@ -114,7 +117,11 @@ public class CatalogAdminOperations {
     var skus = (List<Map<String, Object>>) b.get("skus");
     Problem.require(
         skus != null && !skus.isEmpty() && skus.size() <= 20, "INVALID_SKU", "需配置1至20个规格");
+    var previous = skuMapper.lockActiveCatalogSkus(id);
+    Set<Long> retained = new HashSet<>();
+    Set<String> codes = new HashSet<>();
     for (var s : skus) {
+      Problem.require(codes.add(s(s, "code")), "INVALID_SKU", "商品规格编码不能重复");
       Problem.require(
           n(s, "price") > 0
               && n(s, "price") <= 10000000
@@ -127,6 +134,7 @@ public class CatalogAdminOperations {
           "INVALID_SKU",
           "规格价格、成本或库存无效");
       long sid = n(s, "id");
+      Problem.require(sid == 0 || retained.add(sid), "INVALID_SKU", "商品规格不能重复");
       if (sid == 0)
         skuMapper.insertCatalogSku(
             d.id(), id, s(s, "name"), s(s, "code"), n(s, "price"), n(s, "cost"), n(s, "stock"));
@@ -136,6 +144,11 @@ public class CatalogAdminOperations {
         skuMapper.updateCatalogSku(
             s(s, "name"), s(s, "code"), n(s, "price"), n(s, "cost"), n(s, "stock"), sid);
       }
+    }
+    for (var old : previous) {
+      if (retained.contains(n(old, "id"))) continue;
+      Problem.require(n(old, "held") == 0, "STOCK_HELD", "有订单预占的规格不能移除，请等待付款或取消");
+      Problem.require(skuMapper.retireCatalogSku(n(old, "id")) == 1, "STOCK_HELD", "规格库存状态已变化，请刷新重试");
     }
     d.audit(actor, "PRODUCT_SAVE", "" + id, Map.of("name", name, "status", status));
     return Map.of("id", id);

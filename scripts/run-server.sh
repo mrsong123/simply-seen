@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
-if [[ -f .env ]]; then set -a; source .env; set +a; fi
-cd server
-exec java ${JAVA_OPTS:-} -jar target/mall-1.0.0.jar
+exec python3 scripts/manage.py run "$@"

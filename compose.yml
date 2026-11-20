@@ -1,43 +1,71 @@
 services:
   mysql:
     image: mysql:8.4
+    profiles: [database]
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: ${MYSQL_DATABASE:?Required}
-      MYSQL_USER: ${MYSQL_USER:?Required}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Required}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Required}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-sujian}
+      MYSQL_USER: ${MYSQL_USER:-sujian}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-}
     volumes:
       - mysql-data:/var/lib/mysql
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "MYSQL_PWD=$$MYSQL_PASSWORD mysqladmin ping -h localhost -u $$MYSQL_USER --silent",
-        ]
+      test: [CMD-SHELL, 'MYSQL_PWD="$$MYSQL_PASSWORD" mysqladmin ping -h localhost -u "$$MYSQL_USER" --silent']
       interval: 10s
       timeout: 5s
       retries: 20
   server:
     build: ./server
-    env_file: .env
     restart: unless-stopped
     environment:
       APP_DEV_MODE: "false"
-      SPRING_PROFILES_ACTIVE: "prod"
+      SPRING_PROFILES_ACTIVE: prod
+      APP_CONFIG_FILE: ""
+      APP_CONFIG_BASE_DIR: /app
     depends_on:
       mysql:
         condition: service_healthy
-    volumes:
-      - ./secrets/wechat:/run/secrets/wechat:ro
-    expose: ["8080"]
+        required: false
+    expose: ["${PORT:-8080}"]
   web:
     build: ./web
     restart: unless-stopped
     environment:
-      API_UPSTREAM_URL: ${API_UPSTREAM_URL:?Required}
-      TRUSTED_PROXY_CIDR: ${TRUSTED_PROXY_CIDR:-127.0.0.1/32}
-    ports: ["${WEB_BIND:?Required}:80"]
-    depends_on: [server]
+      API_UPSTREAM_URL: ${API_UPSTREAM_URL:-http://server:8080}
+      TRUSTED_PROXY_CIDR: ${TRUSTED_PROXY_CIDR:-172.30.10.0/24}
+    ports: ["${WEB_BIND:-127.0.0.1:8088}:80"]
+    depends_on:
+      server:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD-SHELL, 'wget -Y off -q -O /dev/null http://127.0.0.1/ || exit 1']
+      interval: 15s
+      timeout: 5s
+      retries: 6
+  edge:
+    image: caddy:2.10-alpine
+    profiles: [https]
+    restart: unless-stopped
+    environment:
+      PUBLIC_STORE_URL: ${PUBLIC_STORE_URL:-}
+      ACME_EMAIL: ${ACME_EMAIL:-}
+      NO_PROXY: "${NO_PROXY:-${no_proxy:-}},localhost,127.0.0.1,::1,web"
+      no_proxy: "${no_proxy:-${NO_PROXY:-}},localhost,127.0.0.1,::1,web"
+    ports: ["${HTTP_BIND:-0.0.0.0:80}:80", "${HTTPS_BIND:-0.0.0.0:443}:443"]
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      web:
+        condition: service_healthy
 volumes:
   mysql-data:
+  caddy-data:
+  caddy-config:
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: ${APP_NETWORK_CIDR:-172.30.10.0/24}

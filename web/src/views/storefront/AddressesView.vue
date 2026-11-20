@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import ResourceState from "@/components/common/ResourceState.vue";
+import { useViewResource } from "@/composables/useViewResource";
 import Icon from "@/components/common/Icon.vue";
 import { money, date, label } from "@/utils/format";
 import { ref, onMounted } from "vue";
@@ -7,15 +9,11 @@ import { useAction } from "@/composables/useAction";
 import AccountHeader from "@/components/storefront/AccountHeader.vue";
 import AddressDialog from "@/components/storefront/AddressDialog.vue";
 import ConfirmDialog from "@/components/common/ConfirmDialog.vue";
-const addresses = ref<any[]>([]),
-  addressForm = ref<any>(null),
+const { data: addresses, loading, error, load } = useViewResource(() => memberApi.getAddresses(), []);
+const addressForm = ref<any>(null),
   modal = ref(""),
   addressVisible = ref(false);
 const { busy, run } = useAction();
-async function load() {
-  addresses.value = await memberApi.getAddresses();
-}
-onMounted(() => load().catch(() => {}));
 function openAddress(a?: any) {
   addressForm.value = a || null;
   addressVisible.value = true;
@@ -37,7 +35,8 @@ async function removeAddress() {
         <Icon name="Plus" :size="17" /> 新增地址
       </button>
     </div>
-    <div v-for="a in addresses" :key="a.id" class="panel address-card">
+    <ResourceState :loading="loading" :error="error" @retry="load" />
+    <div v-for="a in (error ? [] : addresses)" :key="a.id" class="panel address-card">
       <div>
         <h3>
           {{ a.name }} <span class="muted">{{ a.phone }}</span>
@@ -58,7 +57,7 @@ async function removeAddress() {
         </button>
       </div>
     </div>
-    <div v-if="!addresses.length" class="empty-state">
+    <div v-if="!loading && !error && !addresses.length" class="empty-state">
       <Icon name="MapPin" :size="40" />
       <h3>还没有收货地址</h3>
       <p>添加地址，让美好准确抵达。</p>

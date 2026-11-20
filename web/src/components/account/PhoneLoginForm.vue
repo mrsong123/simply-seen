@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { normalizeInvite } from "@/utils/invite";
 import { ref } from "vue";
 import { phoneChallengeMustReset } from "@/utils/account";
 import { useAuthStore } from "@/store/auth";
@@ -12,6 +13,8 @@ const accepted = ref(false),
   busy = ref(false),
   error = ref("");
 async function login() {
+  const invite = normalizeInvite(props.inviteCode || "");
+  if (invite === null) { error.value = "邀请码仅支持24位以内字母或数字"; return; }
   if (busy.value || !accepted.value) return;
   const credentials = fields.value?.credentials();
   if (!credentials) return;
@@ -20,7 +23,7 @@ async function login() {
   try {
     await auth.loginPhone({
       ...credentials,
-      inviteCode: props.inviteCode,
+      inviteCode: invite,
       accepted: accepted.value,
     });
     fields.value?.clear();

@@ -29,7 +29,7 @@ async function save() {
       "密码已更新，请重新登录",
     )
   ) {
-    await auth.logout("admin");
+    auth.clearSession("admin");
     emit("close");
     router.replace("/admin/login");
   }

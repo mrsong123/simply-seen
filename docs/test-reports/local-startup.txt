@@ -3,6 +3,7 @@ Private random bootstrap credentials: created, not logged, stable after restart
 Phone authentication: auto-register, single-use code, original-account phone binding: passed
 Identity: explicit development verification, masked fields, withdrawal gate: passed
 Private account encryption key and identity/profile: stable after restart
+Server-side catalogue/admin/member pagination and member financial projection: passed
 Real HTTP: login, permission rejection, address, quote, idempotent order, development pay, shipment, receipt, refund: passed
 Production without required configuration: startup rejected
 No real merchant transaction was performed.

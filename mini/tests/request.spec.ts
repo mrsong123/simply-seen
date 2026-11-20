@@ -158,3 +158,32 @@ describe("Axios adapter on the WeChat native transport", () => {
     expect(native.showToast).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("Request isolation while changing member sessions", () => {
+  it("does not clear a newly logged-in phone session when an older request returns 401", async () => {
+    const request = await transport();
+    const pending = request.get("/me");
+    const assertion = expect(pending).rejects.toMatchObject({
+      code: "SESSION_CHANGED",
+    });
+    await ready();
+    native.getStorageSync.mockReturnValue("new-phone-session");
+    success({ code: "AUTH_REQUIRED", message: "old session expired" }, 401);
+    await assertion;
+    expect(native.removeStorageSync).not.toHaveBeenCalled();
+    expect(native.$emit).not.toHaveBeenCalled();
+    expect(native.showToast).not.toHaveBeenCalled();
+  });
+  it("rejects a late private successful response rather than exposing the previous member's data", async () => {
+    const request = await transport();
+    const pending = request.get("/me/records/ledger");
+    const assertion = expect(pending).rejects.toMatchObject({
+      code: "SESSION_CHANGED",
+    });
+    await ready();
+    native.getStorageSync.mockReturnValue("new-phone-session");
+    success({ code: "OK", data: { items: [{ member_id: 7, amount: 1000 }] } });
+    await assertion;
+    expect(native.showToast).not.toHaveBeenCalled();
+  });
+});

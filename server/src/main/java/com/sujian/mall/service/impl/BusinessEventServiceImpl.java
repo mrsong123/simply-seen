@@ -5,9 +5,12 @@ import com.sujian.mall.common.JsonCodec;
 import com.sujian.mall.mapper.*;
 import com.sujian.mall.service.BusinessEventService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class BusinessEventServiceImpl implements BusinessEventService {
+  @org.springframework.beans.factory.annotation.Autowired private SystemGuardMapper guards;
+
   private final IdBlockAllocator ids;
   private final JsonCodec json;
   private final AuditMapper auditMapper;
@@ -32,10 +35,14 @@ public class BusinessEventServiceImpl implements BusinessEventService {
         ids.next(), actor, action, resource, json.encode(detail), System.currentTimeMillis());
   }
 
+  @Transactional
   public void issue(String kind, String resource, String detail) {
-    if (issueMapper.countForIssue(kind, resource) == 0)
-      issueMapper.insertForIssue(
-          ids.next(), kind, resource, detail, "OPEN", System.currentTimeMillis());
+    com.sujian.mall.common.Rows.required(guards.lockIssues());
+    var existing = issueMapper.findByBusinessKey(kind, resource);
+    if (existing == null)
+      issueMapper.insertForIssue(ids.next(), kind, resource, detail, "OPEN", System.currentTimeMillis());
+    else if (!"OPEN".equals(existing.get("state")))
+      issueMapper.reopen(((Number) existing.get("id")).longValue(), detail, System.currentTimeMillis());
   }
 
   public void event(String key, String kind, String aggregate) {

@@ -26,23 +26,23 @@ export function formatAdminCell(row: any, field: string) {
   if (field === "active") return row[field] ? "已启用" : "已停用";
   return row[field] ?? "—";
 }
+export function safeCsvCell(value: unknown) {
+  let text = String(value ?? "");
+  if (/^(?:[\t\r\n]|\s*[=+\-@])/.test(text)) text = `'${text}`;
+  return `"${text.replaceAll('"', '""')}"`;
+}
 export function exportAdminCsv(
   title: string,
   columns: AdminColumn[],
   rows: any[],
 ) {
-  const safe = (value: unknown) => {
-    let text = String(value ?? "");
-    if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`;
-    return `"${text.replaceAll('"', '""')}"`;
-  };
   const content =
     "\ufeff" +
     [
-      columns.map((column) => safe(column[1])).join(","),
+      columns.map((column) => safeCsvCell(column[1])).join(","),
       ...rows.map((row) =>
         columns
-          .map((column) => safe(formatAdminCell(row, column[0])))
+          .map((column) => safeCsvCell(formatAdminCell(row, column[0])))
           .join(","),
       ),
     ].join("\r\n");

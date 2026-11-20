@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, inject, ref, watch } from "vue";
+import { adminRecordsKey } from "@/composables/admin/useAdminRecords";
+import ResourceState from "@/components/common/ResourceState.vue";
 import Icon from "@/components/common/Icon.vue";
 import type { AdminColumn } from "@/config/admin";
 import { label } from "@/utils/format";
@@ -13,39 +15,23 @@ const props = withDefaults(
     columns: AdminColumn[];
     title: string;
     loading?: boolean;
+    error?: string | boolean;
     icon?: string;
   }>(),
-  { loading: false, icon: "FileText" },
+  { loading: false, error: false, icon: "FileText" },
 );
-const query = ref(""),
-  status = ref(""),
-  current = ref(1);
-const states = computed(() => [
-  ...new Set(props.rows.map((row) => row.state || row.status).filter(Boolean)),
-]);
-const filtered = computed(() =>
-  props.rows.filter(
-    (row) =>
-      (!query.value ||
-        JSON.stringify(row)
-          .toLowerCase()
-          .includes(query.value.toLowerCase())) &&
-      (!status.value ||
-        row.state === status.value ||
-        row.status === status.value),
-  ),
-);
-const pages = computed(() =>
-  Math.max(1, Math.ceil(filtered.value.length / 10)),
-);
-const visible = computed(() =>
-  filtered.value.slice((current.value - 1) * 10, current.value * 10),
-);
-watch([query, status], () => (current.value = 1));
-watch(
-  () => props.rows,
-  () => (current.value = Math.min(current.value, pages.value)),
-);
+defineEmits<{ retry: [] }>();
+const records = inject(adminRecordsKey, null);
+const localQuery = ref(""), localStatus = ref(""), localPage = ref(1);
+const query = computed({ get: () => records?.search.value ?? localQuery.value, set: (value: string) => { if (records) records.setSearch(value); else localQuery.value = value; } });
+const status = computed({ get: () => records?.state.value ?? localStatus.value, set: (value: string) => { if (records) records.setState(value); else localStatus.value = value; } });
+const current = computed({ get: () => records?.page.value ?? localPage.value, set: (value: number) => { if (records) records.setPage(value); else localPage.value = value; } });
+const states = computed(() => records ? records.states.value : [...new Set(props.rows.map(row => row.state || row.status).filter(Boolean))]);
+const filtered = computed(() => records ? props.rows : props.rows.filter(row => (!query.value || JSON.stringify(row).toLowerCase().includes(query.value.toLowerCase())) && (!status.value || row.state === status.value || row.status === status.value)));
+const pages = computed(() => records ? records.totalPages.value : Math.max(1, Math.ceil(filtered.value.length / 10)));
+const visible = computed(() => records ? filtered.value : filtered.value.slice((current.value - 1) * 10, current.value * 10));
+watch([localQuery, localStatus], () => { localPage.value = 1; });
+watch(() => props.rows, () => { if (!records) localPage.value = Math.min(localPage.value, pages.value); });
 </script>
 <template>
   <div class="data-panel">
@@ -53,7 +39,7 @@ watch(
       <label class="search-field"
         ><Icon name="Search" :size="17" /><input
           v-model="query"
-          placeholder="搜索当前记录"
+          :placeholder="records ? '搜索全部记录' : '搜索当前记录'"
           aria-label="搜索管理记录"
       /></label>
       <div>
@@ -64,14 +50,16 @@ watch(
           </option></select
         ><button
           class="button small"
-          @click="exportAdminCsv(title, columns, filtered)"
+          :disabled="loading || !!error"
+          @click="exportAdminCsv(title + '-当前页' + current, columns, filtered)"
         >
-          <Icon name="Download" :size="15" /> 导出记录
+          <Icon name="Download" :size="15" /> 导出当前页
         </button>
       </div>
     </div>
     <div class="table-scroll">
-      <table>
+      <ResourceState :loading="loading" :error="error" @retry="$emit('retry')" />
+      <table v-if="!loading && !error">
         <thead>
           <tr>
             <th v-for="column in columns" :key="column[0]">{{ column[1] }}</th>
@@ -117,18 +105,20 @@ watch(
           </tr>
         </tbody>
       </table>
-      <div v-if="!loading && !filtered.length" class="empty-state compact">
+      <div v-if="!loading && !error && !filtered.length" class="empty-state compact">
         <Icon :name="icon" :size="32" />
         <h3>暂无{{ query ? "匹配" : "" }}记录</h3>
         <p>真实业务发生后，记录将在这里呈现。</p>
       </div>
     </div>
     <div class="table-footer">
-      <span>当前加载 {{ rows.length }} 条，匹配 {{ filtered.length }} 条</span>
+      <span v-if="records">共 {{ records.total.value }} 条，当前页 {{ rows.length }} 条</span>
+      <span v-else>当前加载 {{ rows.length }} 条，匹配 {{ filtered.length }} 条</span>
       <div>
+        <select v-if="records" :value="records.size.value" aria-label="每页记录数" :disabled="loading" @change="records.setSize(Number(($event.target as HTMLSelectElement).value))"><option :value="10">每页10条</option><option :value="20">每页20条</option><option :value="50">每页50条</option></select>
         <button
           class="icon-button"
-          :disabled="current <= 1"
+          :disabled="loading || current <= 1"
           aria-label="上一页"
           @click="current--"
         >
@@ -136,7 +126,7 @@ watch(
         ><span>{{ current }} / {{ pages }}</span
         ><button
           class="icon-button"
-          :disabled="current >= pages"
+          :disabled="loading || current >= pages"
           aria-label="下一页"
           @click="current++"
         >

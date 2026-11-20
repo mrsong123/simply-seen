@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
-import { onShow } from "@dcloudio/uni-app";
+import { onShow, onPullDownRefresh } from "@dcloudio/uni-app";
 import PageShell from "../../components/PageShell.vue";
 import PageHeading from "../../components/PageHeading.vue";
+import PageLoadState from "../../components/PageLoadState.vue";
 import { useCartStore } from "../../store/cart";
 import { useSessionStore } from "../../store/session";
 import { useTask } from "../../utils/useTask";
@@ -21,6 +22,7 @@ const addresses = ref<Address[]>([]),
   points = ref(0),
   remark = ref(""),
   accepted = ref(false),
+  loadError = ref(false),
   quote = ref<Quote | null>(null);
 let idempotency = requestKey(),
   sequence = 0;
@@ -40,18 +42,27 @@ async function updateQuote() {
 }
 async function reload() {
   if (!requireSession("checkout")) return;
+  sequence++;
+  quote.value = null;
   await run(async () => {
-    await Promise.all([cart.refresh(), session.refresh()]);
-    addresses.value = await addressApi.list();
-    if (!addresses.value.some((item) => item.id === addressId.value))
-      addressId.value =
-        addresses.value.find((item) => item.is_default)?.id ||
-        addresses.value[0]?.id ||
-        0;
-    await updateQuote();
+    loadError.value = false;
+    try {
+      await Promise.all([cart.refresh(), session.refresh()]);
+      addresses.value = await addressApi.list();
+      if (!addresses.value.some((item) => item.id === addressId.value))
+        addressId.value =
+          addresses.value.find((item) => item.is_default)?.id ||
+          addresses.value[0]?.id ||
+          0;
+      await updateQuote();
+    } catch (error) {
+      loadError.value = true;
+      throw error;
+    }
   });
 }
 function choose(id: number) {
+  if (busy.value) return;
   addressId.value = id;
   void run(updateQuote);
 }
@@ -76,10 +87,16 @@ async function submit() {
   });
 }
 onShow(reload);
+onPullDownRefresh(async () => {
+  await reload();
+  uni.stopPullDownRefresh();
+});
 </script>
 <template>
   <PageShell
-    ><PageHeading title="确认这份美好" /><view class="box"
+    ><PageHeading title="确认这份美好" />
+    <PageLoadState :failed="loadError" :loading="busy && !quote" @retry="reload" />
+    <view class="box"
       ><view class="row"
         ><text class="field-title">收货地址</text
         ><text class="link" @tap="navigate('addressEdit')">新增地址</text></view
@@ -95,7 +112,7 @@ onShow(reload);
         ><text class="sub"
           >{{ address.region }} {{ address.detail }}</text
         ></view
-      ><text v-if="!addresses.length" class="sub">请先添加收货地址</text></view
+      ><text v-if="!busy && !loadError && !addresses.length" class="sub">请先添加收货地址</text></view
     ><view class="box"
       ><view v-for="item in cart.items" :key="item.sku_id" class="small-item"
         ><image :src="image(item.image)" mode="aspectFit" /><view
@@ -130,6 +147,21 @@ onShow(reload);
           ><text>应付金额</text
           ><text class="big">¥{{ money(quote.cashDueFen) }}</text></view
         ></template
+      ><template v-else-if="addressId && cart.items.length"
+        ><text class="sub">{{
+          busy ? "正在核对价格、库存与积分" : "当前报价不可用，请重新获取"
+        }}</text
+        ><button class="secondary" :disabled="busy" @tap="run(updateQuote)">
+          重新获取报价
+        </button></template
+      ><text v-else-if="!loadError && !cart.items.length" class="sub"
+        >购物袋为空，请先选购商品。</text
+      ><button
+        v-if="!cart.items.length"
+        class="secondary"
+        @tap="navigate('home')"
+      >
+        去发现好物</button
       ><view class="checkbox" @tap="accepted = !accepted"
         ><text>{{ accepted ? "☑" : "□" }} 我已阅读并同意</text
         ><text class="link" @tap.stop="navigate('legal', { type: 'terms' })"

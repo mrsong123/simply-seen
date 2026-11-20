@@ -1,0 +1,20 @@
+2026-11-19 (America/Los_Angeles): release validation
+ ✓ tests/request.spec.ts (11 tests) 772ms
+ ✓ tests/catalog-loading.spec.ts (3 tests) 103ms
+ ✓ tests/account-session.spec.ts (6 tests) 43ms
+ ✓ tests/cart-store.spec.ts (3 tests) 19ms
+ ✓ tests/router.spec.ts (7 tests) 40ms
+ ✓ tests/order-completion.spec.ts (3 tests) 32ms
+ ✓ tests/payment-account.spec.ts (7 tests) 33ms
+ ✓ tests/phone-challenge.spec.ts (6 tests) 26ms
+ ✓ tests/pagination.spec.ts (7 tests) 15ms
+ ✓ tests/native-wechat.spec.ts (7 tests) 31ms
+ ✓ tests/action-safety.spec.ts (3 tests) 16ms
+ ✓ tests/identity-rules.spec.ts (3 tests) 5ms
+ Test Files  12 passed (12)
+      Tests  66 passed (66)
+   Duration  4.60s (transform 324ms, setup 0ms, collect 575ms, tests 1.13s, environment 2ms, prepare 931ms)
+npm run typecheck --prefix mini: passed.
+npm run build:mp-weixin --prefix mini: passed.
+All 16 registered pages have JS/JSON/WXML artifacts. Source manifest AppID remains empty.
+Native adapter tests use controlled wx/uni callbacks; no real-device certification.

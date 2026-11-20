@@ -141,6 +141,7 @@ export interface Order {
   member_id: number;
   state: string;
   payment_state: string;
+  payment_channel?: "UNSELECTED" | "MINI_PROGRAM" | "NATIVE" | "H5";
   item_amount: number;
   freight: number;
   points_used: number;

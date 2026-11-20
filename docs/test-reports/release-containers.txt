@@ -1,0 +1,18 @@
+Component Docker acceptance before the final commission/environment patch
+Client date: 2026-11-19
+Server JAR SHA-256: 6d8cbc89db257d08dbbee978ba915131803723b8539dd29aae584f09ce2de59b
+Images: sujian-release-acceptance-server / sujian-release-acceptance-web
+Isolated containers/network and loopback random port; existing services and databases unchanged.
+Server JAR and production web dist Docker image builds: passed
+Docker HealthProbe readiness on default PORT=8080: passed
+Docker HealthProbe readiness on custom PORT=19180: passed
+Both Java containers run non-root and explicit HealthProbe exits zero: passed
+Nginx serves actual built app and history routes: passed
+Nginx actual API proxy reaches custom-port Java and persisted products: passed
+Real HTTP phone auto-registration and explicitly simulated masked identity through Nginx: passed
+Account encryption key generated for app user with POSIX mode 600: passed
+Headless Chromium renders compiled storefront, loads product API and navigates catalogue: passed
+APP_CONFIG_FILE was explicitly empty; no host dotenv or real merchant credentials loaded.
+No real SMS, real identity service, payment/transfer or public ACME request performed.
+All acceptance containers and network are removed after verification.
+Final patched production stack and final JAR hash are verified separately in configured-production-stack.txt.

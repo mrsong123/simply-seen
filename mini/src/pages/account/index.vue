@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, watch } from "vue";
 import { onShow, onPullDownRefresh } from "@dcloudio/uni-app";
 import PageShell from "../../components/PageShell.vue";
 import ModalPanel from "../../components/ModalPanel.vue";
@@ -7,7 +7,9 @@ import AccountLoginPanel from "../../components/AccountLoginPanel.vue";
 import { useSessionStore } from "../../store/session";
 import { useAppStore } from "../../store/app";
 import { useCartStore } from "../../store/cart";
-import { memberApi } from "../../api/member";
+import { memberRecords } from "../../api/records";
+import { usePagedRecords } from "../../composables/usePagedRecords";
+import RecordPager from "../../components/RecordPager.vue";
 import { useTask } from "../../utils/useTask";
 import { navigate, afterLogin, type RouteName } from "../../utils/router";
 import { money, time, label } from "../../utils/format";
@@ -16,8 +18,25 @@ const session = useSessionStore(),
   app = useAppStore(),
   cart = useCartStore();
 const { busy, run } = useTask();
-const ledger = ref<Ledger[]>([]),
-  name = ref(""),
+const asset = ref("");
+const assets = ["", "points", "points_held", "available", "reserved", "debt"];
+const assetLabels = assets.map((value) => (value ? label(value) : "全部资产"));
+const records = usePagedRecords<Ledger>(
+  (page, size) => memberRecords("ledger", page, size, { asset: asset.value }),
+  true,
+);
+const {
+  items: ledger,
+  page,
+  total,
+  totalPages,
+  loaded,
+  loading,
+  failed,
+  next,
+  retry,
+} = records;
+const name = ref(""),
   nameOpen = ref(false);
 const links: { name: RouteName; label: string }[] = [
   { name: "orders", label: "我的订单" },
@@ -26,11 +45,13 @@ const links: { name: RouteName; label: string }[] = [
   { name: "withdraw", label: "佣金提现" },
   { name: "security", label: "账户与安全" },
   { name: "identity", label: "实名认证" },
+  { name: "awards", label: "月度奖励" },
 ];
 async function refresh() {
-  await app.load();
+  await app.load(true);
   await session.refresh();
-  ledger.value = session.profile ? await memberApi.ledger() : [];
+  if (session.profile) await records.reload();
+  else records.clear();
 }
 async function reload() {
   await run(refresh);
@@ -40,6 +61,15 @@ onPullDownRefresh(async () => {
   await reload();
   uni.stopPullDownRefresh();
 });
+function changeAsset(event: { detail: { value: string } }) {
+  asset.value = assets[Number(event.detail.value)] || "";
+  void run(records.reload);
+}
+watch(
+  () => session.profile?.id,
+  () => records.clear(),
+  { flush: "sync" },
+);
 function loggedIn() {
   afterLogin();
   void cart.refresh().catch(() => undefined);
@@ -59,13 +89,14 @@ async function saveName() {
 async function logout() {
   await run(async () => {
     await session.logout();
-    ledger.value = [];
+    records.clear();
   });
 }
 </script>
 <template>
   <PageShell tab="account"
-    ><AccountLoginPanel v-if="!session.profile" @success="loggedIn" />
+    ><AccountLoginPanel v-if="!session.profile && !session.hasStoredSession" @success="loggedIn" />
+    <view v-else-if="!session.profile" class="box"><text class="sub">本机已有登录凭据，账户状态尚未读取完成。可重试读取，无需重新注册。</text><button class="secondary" :disabled="busy" @tap="reload">重新读取账户</button></view>
     <template v-else
       ><view class="member-card"
         ><view class="avatar">{{ session.profile.name.slice(0, 1) }}</view
@@ -98,10 +129,18 @@ async function logout() {
         ></view
       ><view class="box"
         ><view class="field-title">资产明细</view
-        ><view
-          v-for="item in ledger.slice(0, 30)"
-          :key="item.id"
-          class="history"
+        ><picker
+          :range="assetLabels"
+          :value="assets.indexOf(asset)"
+          :disabled="loading"
+          @change="changeAsset"
+          ><view class="row"
+            ><text>资产类型</text
+            ><text class="link"
+              >{{ assetLabels[assets.indexOf(asset)] }} ▾</text
+            ></view
+          ></picker
+        ><view v-for="item in ledger" :key="item.id" class="history"
           ><view class="row"
             ><text>{{ item.note }}</text
             ><text
@@ -115,7 +154,16 @@ async function logout() {
           ><text class="sub"
             >{{ label(item.asset) }} · {{ time(item.created_at) }}</text
           ></view
-        ><text v-if="!ledger.length" class="sub">暂无资产变动</text></view
+        ><text v-if="loaded && !failed && !ledger.length" class="sub"
+          >当前条件下暂无资产变动</text
+        ><RecordPager
+          :page="page"
+          :total="total"
+          :total-pages="totalPages"
+          :loading="loading"
+          :failed="failed"
+          @more="run(next)"
+          @retry="run(retry)" /></view
       ><button class="text-button" :disabled="busy" @tap="logout">
         退出登录
       </button></template

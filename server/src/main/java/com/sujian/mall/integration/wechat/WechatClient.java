@@ -7,26 +7,23 @@ import com.sujian.mall.config.Settings;
 import java.net.*;
 import java.net.http.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
-import java.security.*;
-import java.security.spec.*;
 import java.time.*;
 import java.util.*;
-import javax.crypto.*;
-import javax.crypto.spec.*;
 import org.springframework.stereotype.Component;
 
 @Component
 public class WechatClient {
   private final Settings c;
   private final JsonCodec d;
+  private final WechatCryptography cryptography;
 
   public WechatClient(Settings c, JsonCodec d) {
     this.c = c;
     this.d = d;
+    cryptography = new WechatCryptography(c, d);
   }
 
-  private HttpClient client() {
+  protected HttpClient client() {
     var b = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10));
     String proxy = System.getenv("HTTPS_PROXY");
     if (proxy != null) {
@@ -53,67 +50,18 @@ public class WechatClient {
     return URLEncoder.encode(x, StandardCharsets.UTF_8);
   }
 
-  private PrivateKey privateKey() {
-    try {
-      String pem =
-          Files.readString(Path.of(c.required("WX_PRIVATE_KEY_PATH")))
-              .replaceAll("-----[^-]+-----|\\s", "");
-      return KeyFactory.getInstance("RSA")
-          .generatePrivate(new PKCS8EncodedKeySpec(Base64.getDecoder().decode(pem)));
-    } catch (Exception e) {
-      throw new Problem(503, "KEY_CONFIGURATION", "微信商户私钥不可用");
-    }
-  }
-
-  private PublicKey publicKey() {
-    try {
-      String pem =
-          Files.readString(Path.of(c.required("WX_PLATFORM_PUBLIC_KEY_PATH")))
-              .replaceAll("-----[^-]+-----|\\s", "");
-      return KeyFactory.getInstance("RSA")
-          .generatePublic(new X509EncodedKeySpec(Base64.getDecoder().decode(pem)));
-    } catch (Exception e) {
-      throw new Problem(503, "KEY_CONFIGURATION", "微信平台公钥不可用");
-    }
-  }
-
-  String sign(String message) {
-    try {
-      Signature s = Signature.getInstance("SHA256withRSA");
-      s.initSign(privateKey());
-      s.update(message.getBytes(StandardCharsets.UTF_8));
-      return Base64.getEncoder().encodeToString(s.sign());
-    } catch (Problem e) {
-      throw e;
-    } catch (Exception e) {
-      throw new Problem(503, "SIGN_FAILED", "请求签名失败");
-    }
-  }
+  String sign(String message) { return cryptography.sign(message); }
 
   public void verify(String serial, String timestamp, String nonce, String signature, String body) {
-    try {
-      Problem.require(
-          Objects.equals(serial, c.required("WX_PLATFORM_SERIAL")),
-          "INVALID_SIGNATURE",
-          "平台公钥编号不符");
-      Problem.require(
-          Math.abs(Instant.now().getEpochSecond() - Long.parseLong(timestamp)) <= 300,
-          "INVALID_SIGNATURE",
-          "回调时间失效");
-      Signature verifier = Signature.getInstance("SHA256withRSA");
-      verifier.initVerify(publicKey());
-      verifier.update(
-          (timestamp + "\n" + nonce + "\n" + body + "\n").getBytes(StandardCharsets.UTF_8));
-      Problem.require(
-          verifier.verify(Base64.getDecoder().decode(signature)), "INVALID_SIGNATURE", "微信签名校验失败");
-    } catch (Problem e) {
-      throw e;
-    } catch (Exception e) {
-      throw new Problem(400, "INVALID_SIGNATURE", "微信签名无效");
-    }
+    cryptography.verify(serial, timestamp, nonce, signature, body);
   }
 
   public Map<String, Object> request(String method, String uri, String payload, boolean signed) {
+    return request(method, uri, payload, signed, Map.of());
+  }
+
+  protected Map<String, Object> request(String method, String uri, String payload, boolean signed,
+      Map<String, String> additionalHeaders) {
     try {
       URI u = URI.create(uri);
       Problem.require(u.getScheme().equals("https"), "INSECURE_ENDPOINT", "外部接口必须使用HTTPS");
@@ -127,6 +75,7 @@ public class WechatClient {
                   payload.isEmpty()
                       ? HttpRequest.BodyPublishers.noBody()
                       : HttpRequest.BodyPublishers.ofString(payload));
+      additionalHeaders.forEach(r::header);
       if (signed) {
         String ts = "" + Instant.now().getEpochSecond(), nonce = UUID.randomUUID().toString();
         String target = u.getRawPath() + (u.getRawQuery() == null ? "" : "?" + u.getRawQuery());
@@ -174,40 +123,25 @@ public class WechatClient {
     return new Problem(502, code, "微信渠道拒绝请求（" + code + "），请核对商户配置及业务状态");
   }
 
-  public Map<String, Object> prepay(Map<String, Object> o, String openid) {
-    String no = s(o, "id");
-    Map<String, Object> body = new LinkedHashMap<>();
-    body.put("appid", c.required("WX_APP_ID"));
-    body.put("mchid", c.required("WX_MCH_ID"));
-    body.put("description", "素见好物订单 " + no);
-    body.put("out_trade_no", no);
-    body.put("notify_url", c.required("WX_PAY_NOTIFY_URL"));
-    body.put("amount", Map.of("total", n(o, "cash_due"), "currency", "CNY"));
-    body.put("payer", Map.of("openid", openid));
-    var result =
-        request(
-            "POST",
-            c.required("WX_PAY_BASE_URL") + "/v3/pay/transactions/jsapi",
-            d.encode(body),
-            true);
-    String ts = "" + Instant.now().getEpochSecond(),
-        nonce = UUID.randomUUID().toString(),
-        pkg = "prepay_id=" + s(result, "prepay_id");
-    return Map.of(
-        "timeStamp",
-        ts,
-        "nonceStr",
-        nonce,
-        "package",
-        pkg,
-        "signType",
-        "RSA",
-        "paySign",
-        sign(c.required("WX_APP_ID") + "\n" + ts + "\n" + nonce + "\n" + pkg + "\n"));
+  public Map<String, Object> prepay(Map<String, Object> order, String openid) {
+    return prepay(order, openid, "MINI_PROGRAM", "");
+  }
+
+  public Map<String, Object> prepay(
+      Map<String, Object> order, String openid, String channel, String clientIp) {
+    return WechatPrepayment.create(this, c, d, order, openid, channel, clientIp);
+  }
+
+  public Map<String, Object> refreshMiniPrepay(Map<String, Object> stored) {
+    return WechatPrepayment.miniSignature(this, c, s(stored, "package"));
+  }
+
+  public Map<String, Object> refreshMiniPrepay(Map<String, Object> stored, String appId) {
+    return WechatPrepayment.miniSignature(this, s(stored, "package"), appId);
   }
 
   public Map<String, Object> queryPayment(String no) {
-    return request(
+    var result = request(
         "GET",
         c.required("WX_PAY_BASE_URL")
             + "/v3/pay/transactions/out-trade-no/"
@@ -216,6 +150,8 @@ public class WechatClient {
             + enc(c.required("WX_MCH_ID")),
         "",
         true);
+    Problem.require(no.equals(s(result, "out_trade_no")), "PAYMENT_ORDER_MISMATCH", "渠道订单编号不符");
+    return result;
   }
 
   public void close(String no) {
@@ -246,11 +182,22 @@ public class WechatClient {
   }
 
   public Map<String, Object> queryRefund(String no) {
-    return request(
+    var result = request(
         "GET", c.required("WX_PAY_BASE_URL") + "/v3/refund/domestic/refunds/" + enc(no), "", true);
+    Problem.require(no.equals(s(result, "out_refund_no")), "REFUND_ORDER_MISMATCH", "渠道退款单号不符");
+    return result;
   }
 
   public Map<String, Object> transfer(Map<String, Object> r, String openid) {
+    return transfer(r, openid, "");
+  }
+
+  public Map<String, Object> transfer(Map<String, Object> r, String openid, String verifiedName) {
+    Problem.require(!openid.isBlank() && !openid.startsWith("dev:"),
+        "WECHAT_BINDING_REQUIRED", "真实转账需要已绑定的微信账户");
+    boolean hasName = verifiedName != null && !verifiedName.isBlank();
+    Problem.require(n(r, "net") < 200000 || hasName,
+        "TRANSFER_NAME_REQUIRED", "单笔转账达到2000元时必须提供已核验收款姓名");
     var body = new LinkedHashMap<String, Object>();
     body.put("appid", c.required("WX_APP_ID"));
     body.put("out_bill_no", s(r, "id"));
@@ -261,43 +208,26 @@ public class WechatClient {
     body.put("notify_url", c.required("WX_TRANSFER_NOTIFY_URL"));
     body.put("user_recv_perception", c.required("WX_TRANSFER_PERCEPTION"));
     body.put("transfer_scene_report_infos", d.list(c.required("WX_TRANSFER_REPORT_INFOS")));
+    if (hasName) body.put("user_name", cryptography.encryptName(verifiedName));
     return request(
         "POST",
         c.required("WX_TRANSFER_BASE_URL") + "/v3/fund-app/mch-transfer/transfer-bills",
         d.encode(body),
-        true);
+        true,
+        hasName ? Map.of("Wechatpay-Serial", c.required("WX_PLATFORM_SERIAL")) : Map.of());
   }
 
   public Map<String, Object> queryTransfer(String no) {
-    return request(
+    var result = request(
         "GET",
         c.required("WX_TRANSFER_BASE_URL")
             + "/v3/fund-app/mch-transfer/transfer-bills/out-bill-no/"
             + enc(no),
         "",
         true);
+    Problem.require(no.equals(s(result, "out_bill_no")), "TRANSFER_ORDER_MISMATCH", "渠道转账单号不符");
+    return result;
   }
 
-  @SuppressWarnings("unchecked")
-  public Map<String, Object> decrypt(String body) {
-    try {
-      var resource = (Map<String, Object>) d.decode(body).get("resource");
-      Problem.require(
-          s(resource, "algorithm").equals("AEAD_AES_256_GCM"), "INVALID_CALLBACK", "不支持的回调加密算法");
-      Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-      cipher.init(
-          Cipher.DECRYPT_MODE,
-          new SecretKeySpec(c.required("WX_API_V3_KEY").getBytes(StandardCharsets.UTF_8), "AES"),
-          new GCMParameterSpec(128, s(resource, "nonce").getBytes(StandardCharsets.UTF_8)));
-      cipher.updateAAD(s(resource, "associated_data").getBytes(StandardCharsets.UTF_8));
-      return d.decode(
-          new String(
-              cipher.doFinal(Base64.getDecoder().decode(s(resource, "ciphertext"))),
-              StandardCharsets.UTF_8));
-    } catch (Problem e) {
-      throw e;
-    } catch (Exception e) {
-      throw new Problem(400, "INVALID_CALLBACK", "微信回调解密失败");
-    }
-  }
+  public Map<String, Object> decrypt(String body) { return cryptography.decrypt(body); }
 }

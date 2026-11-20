@@ -9,8 +9,9 @@ import AdminDataTable from "@/components/admin/AdminDataTable.vue";
 import ShipOrderDialog from "@/components/admin/ShipOrderDialog.vue";
 import OrderDetailDialog from "@/components/admin/OrderDetailDialog.vue";
 const auth = useAuthStore();
-const { data, loading, load } = useAdminResource<any[]>(() =>
+const { data, loading, error, load } = useAdminResource<any[]>(() =>
   adminApi.getOrders(),
+  "orders",
 );
 const rows = computed(() => data.value || []),
   canOperate = computed(() =>
@@ -35,6 +36,8 @@ function shipped() {
     :columns="adminDefinitions.orders.columns!"
     title="订单与履约"
     :loading="loading"
+    :error="error"
+    @retry="load"
     icon="ShoppingBag"
     ><template #actions="{ row }"
       ><button class="text-link" @click="orderNo = row.id">详情</button

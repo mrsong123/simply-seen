@@ -27,7 +27,7 @@ async function save() {
           required
           autocomplete="new-password" /></label
       ><label class="input-label"
-        >角色<select v-model="form.role">
+        >角色<select v-model="form.role" aria-label="角色">
           <option value="OPERATOR">运营：商品、履约、规则草稿</option>
           <option value="FINANCE">财务：审核、账本、对账</option>
           <option value="ADMIN">管理员：权限、规则审批、出款执行</option>

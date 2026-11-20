@@ -1,19 +1,15 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref } from "vue";
+import ResourceState from "@/components/common/ResourceState.vue";
+import { useViewResource } from "@/composables/useViewResource";
 import { adminApi } from "@/api/admin";
 import { catalogApi } from "@/api/catalog";
 import AdminModal from "./AdminModal.vue";
 import { useAdminMutation } from "@/composables/admin/useAdminMutation";
 const emit = defineEmits<{ close: []; saved: [] }>();
-const categories = ref<any[]>([]);
+const { data: categories, loading, error, load } = useViewResource(() => catalogApi.getCategories(), []);
 const form = ref<any>({ name: "", sort_no: 0 });
 const { busy, execute } = useAdminMutation();
-async function load() {
-  try {
-    categories.value = await catalogApi.getCategories();
-  } catch {}
-}
-onMounted(load);
 async function save() {
   if (await execute(() => adminApi.saveCategory(form.value))) {
     await load();
@@ -24,7 +20,7 @@ async function save() {
 </script>
 <template>
   <AdminModal title="商品分类" @close="emit('close')"
-    ><div v-for="category in categories" :key="category.id" class="history-row">
+    ><ResourceState :loading="loading" :error="error" @retry="load" /><div v-for="category in (error ? [] : categories)" :key="category.id" class="history-row">
       <span>{{ category.name }}</span
       ><button class="text-link" @click="form = { ...category }">编辑</button>
     </div>

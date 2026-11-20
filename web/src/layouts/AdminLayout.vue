@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import Icon from "@/components/common/Icon.vue";
+import ResourceState from "@/components/common/ResourceState.vue";
 import PasswordDialog from "@/components/admin/PasswordDialog.vue";
 import { adminDefinitions } from "@/config/admin";
 import { useAuthStore } from "@/store/auth";
@@ -107,7 +108,7 @@ async function signOut() {
           </button>
         </div>
       </header>
-      <main class="admin-content"><RouterView /></main>
+      <main class="admin-content"><ResourceState v-if="settings.error" :error="settings.error" @retry="settings.load(true).catch(() => {})" /><RouterView /></main>
       <footer class="admin-footer">
         SIMPLY SEEN BUSINESS STUDIO <span>让每一份经营，有迹可循。</span>
       </footer>

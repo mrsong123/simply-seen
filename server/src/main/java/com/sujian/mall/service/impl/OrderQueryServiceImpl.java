@@ -22,12 +22,18 @@ public class OrderQueryServiceImpl implements OrderQueryService {
 
   public List<Map<String, Object>> orders(long uid) {
     var rows = shopOrderMapper.selectMemberOrders(uid);
-    for (var o : rows) o.put("items", orderItemMapper.listForOrders(s(o, "id")));
+    for (var o : rows) {
+      o.remove("payment_payer_openid");
+      o.remove("payment_app_id");
+      o.put("items", orderItemMapper.listForOrders(s(o, "id")));
+    }
     return rows;
   }
 
   public Map<String, Object> order(long uid, String no) {
     var o = com.sujian.mall.common.Rows.required(shopOrderMapper.selectOwnedOrder(no, uid));
+    o.remove("payment_payer_openid");
+    o.remove("payment_app_id");
     o.put("items", orderItemMapper.listForOrders(no));
     o.put("refunds", refundMapper.listForOrder(no));
     o.put("address", d.decode(s(o, "address_snapshot")));

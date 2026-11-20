@@ -8,8 +8,9 @@ import AdminDataTable from "@/components/admin/AdminDataTable.vue";
 import ProductEditor from "@/components/admin/ProductEditor.vue";
 import CategoryEditor from "@/components/admin/CategoryEditor.vue";
 import Icon from "@/components/common/Icon.vue";
-const { data, loading, load } = useAdminResource<any[]>(() =>
+const { data, loading, error, load } = useAdminResource<any[]>(() =>
   adminApi.getProducts(),
+  "products",
 );
 const rows = computed(() => data.value || []);
 const editor = ref(false),
@@ -36,6 +37,8 @@ function saved() {
     :columns="adminDefinitions.products.columns!"
     title="商品管理"
     :loading="loading"
+    :error="error"
+    @retry="load"
     icon="Package"
     ><template #cell-name="{ row }"
       ><div class="table-product">
@@ -57,6 +60,7 @@ function saved() {
     :product="selected"
     @close="editor = false"
     @saved="saved"
+    @manage-categories="editor = false; categoryEditor = true"
   /><CategoryEditor
     v-if="categoryEditor"
     @close="categoryEditor = false"

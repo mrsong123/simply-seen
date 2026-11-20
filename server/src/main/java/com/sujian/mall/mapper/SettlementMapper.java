@@ -11,7 +11,7 @@ public interface SettlementMapper extends BaseMapper<Settlement> {
   @Select("SELECT * FROM settlement ORDER BY period DESC LIMIT 100")
   List<Map<String, Object>> listForSettlements();
 
-  @Select("SELECT * FROM settlement WHERE period=#{period}")
+  @Select("SELECT * FROM settlement WHERE period=#{period} FOR UPDATE")
   List<Map<String, Object>> listForRefundSuccess(@Param("period") String period);
 
   @Update("UPDATE settlement SET state='INVALIDATED' WHERE id=#{id}")

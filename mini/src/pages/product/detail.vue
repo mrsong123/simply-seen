@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { onLoad, onShareAppMessage } from "@dcloudio/uni-app";
 import PageShell from "../../components/PageShell.vue";
 import QuantityStepper from "../../components/QuantityStepper.vue";
@@ -13,26 +13,44 @@ import { authStorage } from "../../utils/storage";
 import type { Product } from "../../types/models";
 const product = ref<Product | null>(null),
   sku = ref(0),
-  quantity = ref(1);
+  quantity = ref(1),
+  loadError = ref(false);
 const selected = computed(() =>
   product.value?.skus.find((item) => item.id === sku.value),
 );
 const cart = useCartStore(),
   session = useSessionStore();
 const { busy, run } = useTask();
-onLoad((options) =>
-  run(async () => {
-    authStorage.saveInvite(options?.invite || "");
+let productId = 0;
+async function reload() {
+  await run(async () => {
+    loadError.value = false;
     void session.refresh().catch(() => undefined);
-    const id = Number(options?.id);
-    if (!id) throw new Error("商品链接无效");
-    product.value = await catalogApi.detail(id);
-    sku.value =
-      product.value.skus.find((item) => item.stock > 0)?.id ||
-      product.value.skus[0]?.id ||
-      0;
-  }),
-);
+    try {
+      if (!Number.isSafeInteger(productId) || productId <= 0)
+        throw new Error("商品链接无效");
+      product.value = await catalogApi.detail(productId);
+      sku.value =
+        product.value.skus.find((item) => item.stock > 0)?.id ||
+        product.value.skus[0]?.id ||
+        0;
+    } catch (error) {
+      loadError.value = true;
+      throw error;
+    }
+  });
+}
+onLoad((options) => {
+  authStorage.saveInvite(options?.invite || "");
+  productId = Number(options?.id);
+  void reload();
+});
+watch(sku, () => {
+  quantity.value = Math.max(
+    1,
+    Math.min(quantity.value, selected.value?.stock || 1),
+  );
+});
 async function add(buy = false) {
   if (!product.value || !requireSession("detail", { id: product.value.id }))
     return;
@@ -95,6 +113,14 @@ onShareAppMessage(() => ({
         ><view class="field-title">关于这件好物</view
         ><text class="description">{{ product.description }}</text></view
       ></template
+    ><view v-else-if="loadError" class="empty">
+      <text>暂时无法读取商品，请检查网络或确认商品是否仍在售。</text>
+      <button class="secondary" :disabled="busy" @tap="reload">
+        重新读取商品
+      </button>
+      <button class="text-button" @tap="navigate('home')">
+        返回全部好物
+      </button> </view
     ><view v-else class="empty">正在读取商品，请稍候</view></PageShell
   >
 </template>

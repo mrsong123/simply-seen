@@ -73,3 +73,15 @@ describe("Native page routing and auth guard", () => {
     });
   });
 });
+
+it("only restores registered local pages, not arbitrary /pages/ paths", async () => {
+  const router = await import("../src/utils/router");
+  memory.set("sj-login-return", "/pages/unknown/unwired");
+  router.afterLogin();
+  expect(native.redirectTo).not.toHaveBeenCalled();
+  memory.set("sj-token", "test");
+  router.navigate("awards");
+  expect(native.navigateTo).toHaveBeenCalledWith({
+    url: "/pages/account/awards",
+  });
+});

@@ -11,6 +11,12 @@ public interface SystemGuardMapper extends BaseMapper<SystemGuard> {
   @Select("SELECT scope_key FROM system_guard WHERE scope_key='COMMISSION' FOR UPDATE")
   Map<String, Object> findForCommission();
 
+  @Select("SELECT scope_key FROM system_guard WHERE scope_key='ADMIN' FOR UPDATE")
+  Map<String, Object> lockAdminAccounts();
+
+  @Select("SELECT scope_key FROM system_guard WHERE scope_key='ISSUE' FOR UPDATE")
+  Map<String, Object> lockIssues();
+
   @Select("SELECT scope_key FROM system_guard WHERE scope_key='RULE' FOR UPDATE")
   Map<String, Object> findForApproveRule();
 }

@@ -42,6 +42,14 @@ public class Sku {
   @JsonProperty("version")
   private Integer version;
 
+  @TableField("active")
+  @JsonProperty("active")
+  private Boolean active;
+
+  public Boolean getActive() { return active; }
+
+  public void setActive(Boolean value) { active = value; }
+
   public Long getId() {
     return id;
   }

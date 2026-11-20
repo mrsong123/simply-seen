@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class IdentityServiceImpl implements IdentityService {
+  @org.springframework.beans.factory.annotation.Autowired private AccountDataProtection protection;
+
   private final MemberIdentityMapper identities;
   private final MemberMapper members;
   private final IdentityGateway gateway;
@@ -62,4 +64,14 @@ public class IdentityServiceImpl implements IdentityService {
         throw new Problem(409, "WECHAT_BINDING_REQUIRED", "请先在微信小程序绑定本人微信账户再提现");
     }
   }
+
+  @Override
+  public String verifiedNameForTransfer(long memberId) {
+    requireVerifiedForWithdrawal(memberId);
+    var row = identities.selectById(memberId);
+    if (row == null || !"VERIFIED".equals(row.getState()) || Boolean.TRUE.equals(row.getDevelopment()))
+      throw new Problem(409, "REAL_IDENTITY_REQUIRED", "真实出款必须使用正式核验的姓名");
+    return protection.decrypt(row.getNameCiphertext());
+  }
+
 }

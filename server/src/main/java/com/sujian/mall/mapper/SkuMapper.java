@@ -8,11 +8,11 @@ import org.apache.ibatis.annotations.*;
 @Mapper
 public interface SkuMapper extends BaseMapper<Sku> {
 
-  @Select("SELECT * FROM sku WHERE product_id=#{productId} ORDER BY id")
+  @Select("SELECT * FROM sku WHERE product_id=#{productId} AND active=TRUE ORDER BY id")
   List<Map<String, Object>> selectCatalogSkus(@Param("productId") long productId);
 
   @Insert(
-      "INSERT INTO sku VALUES(#{id},#{productId},#{name},#{code},#{price},#{cost},#{stock},0,0)")
+      "INSERT INTO sku(id,product_id,name,code,price,cost,stock,held,version) VALUES(#{id},#{productId},#{name},#{code},#{price},#{cost},#{stock},0,0)")
   int insertCatalogSku(
       @Param("id") long id,
       @Param("productId") long productId,
@@ -22,13 +22,22 @@ public interface SkuMapper extends BaseMapper<Sku> {
       @Param("cost") long cost,
       @Param("stock") long stock);
 
+  @Select("SELECT * FROM sku WHERE product_id=#{productId} AND active=FALSE ORDER BY id")
+  List<Map<String, Object>> selectRetiredSkus(@Param("productId") long productId);
+
+  @Select("SELECT * FROM sku WHERE product_id=#{productId} AND active=TRUE ORDER BY id FOR UPDATE")
+  List<Map<String, Object>> lockActiveCatalogSkus(@Param("productId") long productId);
+
+  @Update("UPDATE sku SET active=FALSE,version=version+1 WHERE id=#{id} AND held=0")
+  int retireCatalogSku(@Param("id") long id);
+
   @Select("SELECT * FROM sku WHERE id=#{id} AND product_id=#{productId} FOR UPDATE")
   Map<String, Object> lockSkuForCatalogUpdate(
       @Param("id") long id, @Param("productId") long productId);
 
   @Update(
       "UPDATE sku SET"
-          + " name=#{name},code=#{code},price=#{price},cost=#{cost},stock=#{stock},version=version+1"
+          + " name=#{name},code=#{code},price=#{price},cost=#{cost},stock=#{stock},active=TRUE,version=version+1"
           + " WHERE id=#{id}")
   int updateCatalogSku(
       @Param("name") String name,
@@ -39,26 +48,26 @@ public interface SkuMapper extends BaseMapper<Sku> {
       @Param("id") long id);
 
   @Select(
-      "SELECT id,name,price,stock-held AS stock FROM sku WHERE product_id=#{productId} ORDER BY id")
+      "SELECT id,name,price,stock-held AS stock FROM sku WHERE product_id=#{productId} AND active=TRUE ORDER BY id")
   List<Map<String, Object>> selectPublicSkus(@Param("productId") long productId);
 
   @Select(
       "SELECT s.id FROM sku s JOIN product p ON p.id=s.product_id WHERE s.id=#{id} AND"
-          + " p.status='ON_SALE'")
+          + " p.status='ON_SALE' AND s.active=TRUE")
   Map<String, Object> selectOnSaleSkuId(@Param("id") long id);
 
   @Select(
       "SELECT s.*,p.name AS product_name,p.image,p.status,p.points_percent,p.commission_percent"
-          + " FROM sku s JOIN product p ON s.product_id=p.id WHERE s.id=#{id}")
+          + " FROM sku s JOIN product p ON s.product_id=p.id WHERE s.id=#{id} AND s.active=TRUE")
   Map<String, Object> selectQuotedSku(@Param("id") long id);
 
   @Select(
       "SELECT s.*,p.status,p.points_percent,p.commission_percent FROM sku s JOIN product p ON"
-          + " p.id=s.product_id WHERE s.id=#{id} FOR UPDATE")
+          + " p.id=s.product_id WHERE s.id=#{id} AND s.active=TRUE FOR UPDATE")
   Map<String, Object> selectSkuForReservation(@Param("id") long id);
 
   @Update(
-      "UPDATE sku SET held=held+#{held},version=version+1 WHERE id=#{id} AND stock-held>=#{held2}")
+      "UPDATE sku SET held=held+#{held},version=version+1 WHERE id=#{id} AND active=TRUE AND stock-held>=#{held2}")
   int reserveStock(@Param("held") long held, @Param("id") long id, @Param("held2") long held2);
 
   @Update(

@@ -97,6 +97,8 @@ def smoke(java, jar, result_file):
                          "APP_BOOTSTRAP_CREDENTIALS_PATH", "SPRING_CONFIG_LOCATION",
                          "SPRING_CONFIG_ADDITIONAL_LOCATION"]:
         environment.pop(name, None)
+        environment.pop(name + "_FILE", None)
+    environment["APP_CONFIG_FILE"] = ""
     environment["JOB_INITIAL_DELAY_MS"] = "3600000"
     with tempfile.TemporaryDirectory(prefix="sujian-clean-local-") as temporary:
         workdir = Path(temporary)
@@ -138,6 +140,10 @@ def smoke(java, jar, result_file):
             original_data_key = (workdir / "data/account-data.key").read_bytes()
             call(base, "/admin/orders", token=member, status=403)
             product = call(base, "/products")[0]
+            catalogue = call(base, "/products/page?size=2&page=1&sort=priceUp")
+            assert catalogue["total"] >= 3 and len(catalogue["items"]) == 2
+            call(base, "/admin/records/products", token=member, status=403)
+            assert call(base, "/admin/records/products", token=admin)["total"] >= 3
             sku = call(base, "/products/" + str(product["id"]))["skus"][0]
             address = call(base, "/addresses", "POST", {
                 "name": "本地启动验收", "phone": "13800138000", "region": "浙江省 杭州市 西湖区",
@@ -147,11 +153,17 @@ def smoke(java, jar, result_file):
                 "items": [{"skuId": sku["id"], "quantity": 1}], "addressId": address["id"],
                 "pointsRequested": 0,
             }, member)
+            assert all("cost" not in item and "commissionPercent" not in item for item in quote["items"])
+            assert "beneficiaries" not in quote["rule"] and "commissionBudgetFen" not in quote["rule"]
             body = {"quoteId": quote["quoteId"], "addressId": address["id"], "buyerRemark": "本地启动验证"}
             request_key = uuid.uuid4().hex
             order = call(base, "/orders", "POST", body, member, request_key)
             replay = call(base, "/orders", "POST", body, member, request_key)
             assert order["id"] == replay["id"], "Order creation was not idempotent"
+            assert "rule_snapshot" not in order and "payment_payer_openid" not in order
+            assert all("cost" not in item for item in order["items"])
+            owned_page = call(base, "/me/records/orders", token=member)
+            assert owned_page["items"][0]["id"] == order["id"]
             order_path = "/orders/" + order["id"]
             call(base, "/dev" + order_path + "/pay", "POST", {}, member)
             call(base, "/admin" + order_path + "/ship", "POST", {
@@ -199,6 +211,7 @@ def smoke(java, jar, result_file):
         "Phone authentication: auto-register, single-use code, original-account phone binding: passed\n"
         "Identity: explicit development verification, masked fields, withdrawal gate: passed\n"
         "Private account encryption key and identity/profile: stable after restart\n"
+        "Server-side catalogue/admin/member pagination and member financial projection: passed\n"
         "Real HTTP: login, permission rejection, address, quote, idempotent order, development pay, "
         "shipment, receipt, refund: passed\n"
         "Production without required configuration: startup rejected\n"

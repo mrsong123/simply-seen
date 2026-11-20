@@ -6,8 +6,9 @@ import { useAdminResource } from "@/composables/admin/useAdminResource";
 import AdminPageHeader from "@/components/admin/AdminPageHeader.vue";
 import AdminDataTable from "@/components/admin/AdminDataTable.vue";
 import AuditDetailDialog from "@/components/admin/AuditDetailDialog.vue";
-const { data, loading, load } = useAdminResource<any[]>(() =>
+const { data, loading, error, load } = useAdminResource<any[]>(() =>
   adminApi.getAudit(),
+  "audit",
 );
 const rows = computed(() => data.value || []);
 const selected = ref<any>(null);
@@ -22,6 +23,8 @@ const selected = ref<any>(null);
     :columns="adminDefinitions.audit.columns!"
     title="操作审计"
     :loading="loading"
+    :error="error"
+    @retry="load"
     icon="FileText"
     ><template #actions="{ row }"
       ><button class="text-link" @click="selected = row">详情</button></template

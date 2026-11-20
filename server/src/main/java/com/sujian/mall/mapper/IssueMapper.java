@@ -14,7 +14,16 @@ public interface IssueMapper extends BaseMapper<Issue> {
   @Select("SELECT * FROM issue ORDER BY created_at DESC LIMIT 200")
   List<Map<String, Object>> listForReconciliation();
 
-  @Update("UPDATE issue SET state='RESOLVED' WHERE id=#{id}")
+  @Select("SELECT * FROM issue WHERE id=#{id} FOR UPDATE")
+  Map<String, Object> lockIssue(@Param("id") long id);
+
+  @Select("SELECT * FROM issue WHERE kind=#{kind} AND resource=#{resource} ORDER BY id LIMIT 1 FOR UPDATE")
+  Map<String, Object> findByBusinessKey(@Param("kind") String kind, @Param("resource") String resource);
+
+  @Update("UPDATE issue SET state='OPEN',detail=#{detail},created_at=#{now} WHERE id=#{id}")
+  int reopen(@Param("id") long id, @Param("detail") String detail, @Param("now") long now);
+
+  @Update("UPDATE issue SET state='RESOLVED' WHERE id=#{id} AND state='OPEN'")
   int updateForResolve(@Param("id") long id);
 
   @Select("SELECT COUNT(*) FROM issue WHERE kind=#{kind} AND resource=#{resource}")

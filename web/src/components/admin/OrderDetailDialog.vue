@@ -1,20 +1,16 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { useViewResource } from "@/composables/useViewResource";
+import ResourceState from "@/components/common/ResourceState.vue";
 import { adminApi } from "@/api/admin";
 import AdminModal from "./AdminModal.vue";
 import { money, label } from "@/utils/format";
 const props = defineProps<{ orderNo: string }>();
 defineEmits<{ close: [] }>();
-const order = ref<any>(null);
-onMounted(async () => {
-  try {
-    order.value = await adminApi.getOrder(props.orderNo);
-  } catch {}
-});
+const { data: order, loading, error, load } = useViewResource<any>(() => adminApi.getOrder(props.orderNo), null);
 </script>
 <template>
   <AdminModal title="订单详情" wide @close="$emit('close')"
-    ><template v-if="order"
+    ><ResourceState :loading="loading" :error="error" @retry="load" /><template v-if="order && !error"
       ><p class="mono">
         {{ order.id }} <span class="badge">{{ label(order.state) }}</span>
       </p>
@@ -51,6 +47,6 @@ onMounted(async () => {
         ><span>¥{{ money(refund.amount) }}</span>
       </div></template
     >
-    <p v-else class="muted">正在加载订单…</p></AdminModal
+</AdminModal
   >
 </template>

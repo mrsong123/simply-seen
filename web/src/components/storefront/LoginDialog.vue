@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { normalizeInvite, readInvite } from "@/utils/invite";
 import { safeRedirect } from "@/utils/navigation";
 import { ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
@@ -15,13 +16,15 @@ const route = useRoute(),
   router = useRouter();
 const { busy, run } = useAction();
 const loginName = ref(""),
-  inviteCode = ref(localStorage.getItem("sj-invite") || "");
+  inviteCode = ref(readInvite());
 watch(
   () => route.query.invite,
   (code) => {
     if (code) {
-      inviteCode.value = String(code);
-      localStorage.setItem("sj-invite", inviteCode.value);
+      const normalized = normalizeInvite(code);
+      if (normalized === null) return;
+      inviteCode.value = normalized;
+      localStorage.setItem("sj-invite", normalized);
     }
   },
   { immediate: true },
@@ -39,10 +42,12 @@ async function loggedIn() {
     await router.replace(safeRedirect(route.query.redirect, "/account"));
 }
 async function loginDevelopment() {
+  const normalized = normalizeInvite(inviteCode.value);
+  if (normalized === null) { ui.message("邀请码仅支持24位以内字母或数字", true); return; }
   await run(async () => {
     await auth.loginMember({
       name: loginName.value,
-      inviteCode: inviteCode.value,
+      inviteCode: normalized,
     });
     await loggedIn();
   });

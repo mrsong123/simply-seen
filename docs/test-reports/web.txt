@@ -1,0 +1,17 @@
+2026-11-19 (America/Los_Angeles): release validation
+ ✓ tests/unit/identity-retry.test.ts (2 tests) 14ms
+ ✓ tests/unit/web-payment.test.ts (8 tests) 31ms
+ ✓ tests/unit/request.test.ts (6 tests) 54ms
+ ✓ tests/unit/phone-challenge.test.ts (3 tests) 14ms
+ ✓ tests/unit/pagination.test.ts (7 tests) 14ms
+ ✓ tests/unit/checkout.test.ts (3 tests) 10ms
+ ✓ tests/unit/guards.test.ts (7 tests) 8ms
+ ✓ tests/unit/configuration.test.ts (3 tests) 12ms
+ ✓ tests/unit/account-security.test.ts (11 tests) 9ms
+ ✓ tests/unit/admin-credentials.test.ts (3 tests) 9ms
+ ✓ tests/unit/account-profile.test.ts (2 tests) 9ms
+ Test Files  11 passed (11)
+      Tests  55 passed (55)
+   Duration  2.14s (transform 548ms, setup 0ms, collect 2.00s, tests 184ms, environment 13ms, prepare 1.41s)
+npm run build --prefix web: vue-tsc --noEmit and Vite production build passed.
+Source: final form labels and server-paged UI.

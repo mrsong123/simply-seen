@@ -65,6 +65,7 @@ public class MemberAdminOperations {
 
   @Transactional
   public void block(long actor, long id, Map<String, Object> b) {
+    com.sujian.mall.common.Rows.required(memberMapper.lockAccountById(id));
     memberMapper.setBlocked(b(b, "blocked"), id);
     if (b(b, "blocked")) sessionTokenMapper.deleteForBlock(id);
     d.audit(actor, "MEMBER_BLOCK", "" + id, b);

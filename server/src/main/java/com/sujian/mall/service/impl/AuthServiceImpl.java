@@ -208,5 +208,6 @@ public class AuthServiceImpl implements AuthService {
         "原密码错误或新密码不足12位");
     adminAccountMapper.updateForResetPassword(passwords.encode(next), id);
     sessionTokenMapper.deleteForAccountActive(id);
+    d.audit(id, "PASSWORD_CHANGED", String.valueOf(id), Map.of());
   }
 }

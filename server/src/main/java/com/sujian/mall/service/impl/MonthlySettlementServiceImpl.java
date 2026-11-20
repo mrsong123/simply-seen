@@ -22,6 +22,8 @@ public class MonthlySettlementServiceImpl implements MonthlySettlementService {
   @org.springframework.beans.factory.annotation.Autowired private SettlementMapper settlementMapper;
   @org.springframework.beans.factory.annotation.Autowired private ShopOrderMapper shopOrderMapper;
 
+  @org.springframework.beans.factory.annotation.Autowired private SystemGuardMapper guards;
+
   private final BusinessSupport d;
   private final Settings c;
   private final CommerceService shop;
@@ -43,6 +45,7 @@ public class MonthlySettlementServiceImpl implements MonthlySettlementService {
     }
     ZoneId zone = ZoneId.of("Asia/Shanghai");
     Problem.require(ym.isBefore(YearMonth.now(zone)), "PERIOD_OPEN", "仅能结算已结束月份");
+    com.sujian.mall.common.Rows.required(guards.findForApproveRule());
     var rule = shop.rules();
     com.sujian.mall.common.Rows.required(ruleVersionMapper.findForMonthly(n(rule, "version")));
     var existing = settlementMapper.listForMonthly(month);
@@ -78,6 +81,7 @@ public class MonthlySettlementServiceImpl implements MonthlySettlementService {
 
   @Transactional
   public void approveMonthly(long actor, long id) {
+    com.sujian.mall.common.Rows.required(guards.findForApproveRule());
     var st = com.sujian.mall.common.Rows.required(settlementMapper.findForApproveMonthly(id));
     Problem.require(
         s(st, "state").equals("DRAFT") && n(st, "creator") != actor,

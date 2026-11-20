@@ -90,15 +90,51 @@ for model,nullable in {'Order':'transaction_id paid_at completed_at carrier trac
  for field in nullable.split():
   prop=S[model]['properties'][field]
   if isinstance(prop.get('type'),str):prop['type']=[prop['type'],'null']
+# Public member projections omit cost and raw financial/channel snapshots.
+S['AdminOrder']=json.loads(json.dumps(S['Order']))
+S['PublicOrderItem']=json.loads(json.dumps(S['OrderItem']))
+for name in ['cost','commission_percent']:
+ S['PublicOrderItem']['properties'].pop(name,None)
+ S['PublicOrderItem']['required']=[key for key in S['PublicOrderItem']['required'] if key!=name]
+S['Order']['properties']['items']=arr(ref('PublicOrderItem'))
+S['PublicRefund']=json.loads(json.dumps(S['Refund']))
+S['PublicRefund']['properties'].pop('line_snapshot',None)
+S['PublicRefund']['required']=[key for key in S['PublicRefund']['required'] if key!='line_snapshot']
+S['Order']['properties']['refunds']=arr(ref('PublicRefund'))
+S['PublicCommission']=json.loads(json.dumps(S['Commission']))
+S['PublicCommission']['properties'].pop('rule_snapshot',None)
+S['PublicCommission']['required']=[key for key in S['PublicCommission']['required'] if key!='rule_snapshot']
+S['Team']['properties']['commissions']=arr(ref('PublicCommission'))
+obj('PublicRule',{**fields('version level1Bps level2Bps settlementDays pointsPer100Yuan freightFen freeShippingFen',num),'distributionEnabled':boolean()})
+S['Quote']['properties']['rule']=ref('PublicRule')
+for name in ['rule_snapshot','address_snapshot']:
+ S['Order']['properties'].pop(name,None)
+ S['OrderSummary']['properties'].pop(name,None)
+for name in ['cost','commissionPercent']:
+ S['QuoteItem']['properties'].pop(name,None)
+ S['QuoteItem']['required']=[key for key in S['QuoteItem']['required'] if key!=name]
+for model in ['Order','OrderSummary','AdminOrder']:
+ S[model]['properties']['payment_channel']={'type':'string','enum':['UNSELECTED','MINI_PROGRAM','NATIVE','H5']}
+S['Sku']['properties']['active']=boolean()
+S['Product']['properties']['retired_skus']=arr(ref('Sku'))
+S['Config']['properties']['webPaymentMode']={'type':'string','enum':['native','h5']}
+obj('PrepayRequest',{'channel':{'type':'string','enum':['MINI_PROGRAM','NATIVE','H5'],'default':'MINI_PROGRAM'}},[])
+obj('NativePrepay',{'mode':{'type':'string','const':'NATIVE'},'orderNo':string(),'codeUrl':string('微信原生扫码URI，仅用于真实二维码'),'expiresAt':num()})
+obj('H5Prepay',{'mode':{'type':'string','const':'H5'},'orderNo':string(),'h5Url':{'type':'string','format':'uri'},'expiresAt':num()})
+S['PrepayResult']={'oneOf':[ref('Prepay'),ref('NativePrepay'),ref('H5Prepay'),ref('DevelopmentPrepay')]}
+obj('RecordPage',{'items':arr({'type':'object','description':'按resource返回经过权限及敏感字段过滤的业务投影'}),'total':num(),'page':{'type':'integer','minimum':1},'size':{'type':'integer','minimum':1,'maximum':100},'totalPages':{'type':'integer','minimum':1},'states':arr(string()),'summary':{'type':'object','description':'推广相关会员资源提供账户全量pendingAmount/level1Count/level2Count，不是当前页合计','additionalProperties':num()}})
 # method,path -> (response schema, request schema)
 routes={
-('get','/config'):('Config',None),('get','/categories'):('[Category]',None),('get','/products'):('[ProductCard]',None),('get','/products/{id}'):('PublicProduct',None),('get','/rules/public'):('Rule',None),('post','/auth/wechat'):('Session','LoginRequest'),('post','/auth/dev'):('Session','DevLoginRequest'),('post','/auth/admin'):('Session','AdminLoginRequest'),('post','/auth/logout'):(None,None),('get','/me'):('Member',None),('put','/me'):(None,'Name'),('post','/me/promoter'):(None,'Accepted'),('get','/me/ledger'):('[Ledger]',None),('get','/me/team'):('Team',None),('get','/me/withdrawals'):('[Withdrawal]',None),('post','/me/withdrawals'):('StateId','WithdrawRequest'),('get','/me/awards'):('[Award]',None),('get','/addresses'):('[Address]',None),('post','/addresses'):('Id','Address'),('delete','/addresses/{id}'):(None,None),('get','/cart'):('[CartItem]',None),('put','/cart/{sku}'):(None,'Quantity'),('post','/checkout/quote'):('Quote','QuoteRequest'),('post','/orders'):('Order','OrderRequest'),('get','/orders'):('[Order]',None),('get','/orders/{no}'):('Order',None),('post','/orders/{no}/prepay'):('PrepayResult',None),('post','/orders/{no}/cancel'):(None,None),('get','/orders/{no}/payment-status'):('Order',None),('get','/orders/{no}/logistics'):('[Track]',None),('post','/orders/{no}/receive'):(None,None),('post','/dev/orders/{no}/pay'):(None,None),('post','/refunds'):('StateId','RefundRequest'),('get','/admin/me'):('Admin',None),('post','/admin/password'):(None,'Password'),('get','/admin/summary'):('Summary',None),('get','/admin/products'):('[Product]',None),('post','/admin/products'):('Id','Product'),('post','/admin/categories'):('Id','Category'),('get','/admin/orders'):('[OrderSummary]',None),('get','/admin/orders/{no}'):('Order',None),('post','/admin/orders/{no}/ship'):(None,'Ship'),('get','/admin/refunds'):('[Refund]',None),('post','/admin/refunds/{id}/review'):(None,'Review'),('get','/admin/members'):('[Member]',None),('post','/admin/members/{id}/block'):(None,'Blocked'),('get','/admin/commissions'):('[Commission]',None),('get','/admin/ledger'):('[Ledger]',None),('get','/admin/withdrawals'):('[Withdrawal]',None),('post','/admin/withdrawals/{id}/review'):(None,'Review'),('post','/admin/withdrawals/{id}/execute'):(None,None),('post','/admin/withdrawals/{id}/query'):(None,None),('post','/admin/dev/withdrawals/{id}/confirm'):(None,None),('get','/admin/rules'):('[RuleVersion]',None),('post','/admin/rules'):(None,'Rule'),('post','/admin/rules/{id}/approve'):(None,None),('get','/admin/settlements'):('[Settlement]',None),('post','/admin/settlements'):('Id','Month'),('post','/admin/settlements/{id}/approve'):(None,None),('get','/admin/reconciliation'):('Reconciliation',None),('post','/admin/reconciliation'):('ReconcileBatch',None),('post','/admin/issues/{id}/resolve'):(None,'Reason'),('get','/admin/accounts'):('[Admin]',None),('post','/admin/accounts'):(None,'AccountRequest'),('post','/admin/accounts/{id}/active'):(None,'Active'),('post','/admin/accounts/{id}/reset-password'):(None,'ResetPassword'),('get','/admin/audit'):('[Audit]',None)}
+('get','/config'):('Config',None),('get','/categories'):('[Category]',None),('get','/products'):('[ProductCard]',None),('get','/products/{id}'):('PublicProduct',None),('get','/rules/public'):('PublicRule',None),('post','/auth/wechat'):('Session','LoginRequest'),('post','/auth/dev'):('Session','DevLoginRequest'),('post','/auth/admin'):('Session','AdminLoginRequest'),('post','/auth/logout'):(None,None),('get','/me'):('Member',None),('put','/me'):(None,'Name'),('post','/me/promoter'):(None,'Accepted'),('get','/me/ledger'):('[Ledger]',None),('get','/me/team'):('Team',None),('get','/me/withdrawals'):('[Withdrawal]',None),('post','/me/withdrawals'):('StateId','WithdrawRequest'),('get','/me/awards'):('[Award]',None),('get','/addresses'):('[Address]',None),('post','/addresses'):('Id','Address'),('delete','/addresses/{id}'):(None,None),('get','/cart'):('[CartItem]',None),('put','/cart/{sku}'):(None,'Quantity'),('post','/checkout/quote'):('Quote','QuoteRequest'),('post','/orders'):('Order','OrderRequest'),('get','/orders'):('[Order]',None),('get','/orders/{no}'):('Order',None),('post','/orders/{no}/prepay'):('PrepayResult','PrepayRequest'),('post','/orders/{no}/cancel'):(None,None),('get','/orders/{no}/payment-status'):('Order',None),('get','/orders/{no}/logistics'):('[Track]',None),('post','/orders/{no}/receive'):(None,None),('post','/dev/orders/{no}/pay'):(None,None),('post','/refunds'):('StateId','RefundRequest'),('get','/admin/me'):('Admin',None),('post','/admin/password'):(None,'Password'),('get','/admin/summary'):('Summary',None),('get','/admin/products'):('[Product]',None),('post','/admin/products'):('Id','Product'),('post','/admin/categories'):('Id','Category'),('get','/admin/orders'):('[OrderSummary]',None),('get','/admin/orders/{no}'):('AdminOrder',None),('post','/admin/orders/{no}/ship'):(None,'Ship'),('get','/admin/refunds'):('[Refund]',None),('post','/admin/refunds/{id}/review'):(None,'Review'),('get','/admin/members'):('[Member]',None),('post','/admin/members/{id}/block'):(None,'Blocked'),('get','/admin/commissions'):('[Commission]',None),('get','/admin/ledger'):('[Ledger]',None),('get','/admin/withdrawals'):('[Withdrawal]',None),('post','/admin/withdrawals/{id}/review'):(None,'Review'),('post','/admin/withdrawals/{id}/execute'):(None,None),('post','/admin/withdrawals/{id}/query'):(None,None),('post','/admin/dev/withdrawals/{id}/confirm'):(None,None),('get','/admin/rules'):('[RuleVersion]',None),('post','/admin/rules'):(None,'Rule'),('post','/admin/rules/{id}/approve'):(None,None),('get','/admin/settlements'):('[Settlement]',None),('post','/admin/settlements'):('Id','Month'),('post','/admin/settlements/{id}/approve'):(None,None),('get','/admin/reconciliation'):('Reconciliation',None),('post','/admin/reconciliation'):('ReconcileBatch',None),('post','/admin/issues/{id}/resolve'):(None,'Reason'),('get','/admin/accounts'):('[Admin]',None),('post','/admin/accounts'):(None,'AccountRequest'),('post','/admin/accounts/{id}/active'):(None,'Active'),('post','/admin/accounts/{id}/reset-password'):(None,'ResetPassword'),('get','/admin/audit'):('[Audit]',None)}
 routes.update({
  ('post','/auth/phone/code'):('PhoneCodeChallenge','PhoneCodeRequest'),
  ('post','/auth/phone'):('Session','PhoneLoginRequest'),
  ('post','/me/phone/code'):('PhoneCodeChallenge','PhoneCodeRequest'),
  ('post','/me/phone'):('Member','PhoneBindingRequest'),
  ('post','/me/wechat'):('Member','WechatBindingRequest'),
+ ('get','/products/page'):('RecordPage',None),
+ ('get','/admin/records/{resource}'):('RecordPage',None),
+ ('get','/me/records/{resource}'):('RecordPage',None),
  ('get','/me/identity'):('IdentityStatus',None),
  ('post','/me/identity'):('IdentityStatus','IdentityRequest'),
 })
@@ -120,15 +156,21 @@ assert actual==set(routes),f'Undocumented/missing routes: {actual^set(routes)}'
 spec={'openapi':'3.1.0','info':{'title':'素见好物交易API','version':'1.0.0','description':'金额均为整数分，积分为整数点，时间戳毫秒；管理接口需角色权限，高危操作需不同经办和复核人。'},'servers':[{'url':'/api/v1','description':'同域部署；客户端基址由环境变量覆盖'}],'paths':{},'components':{'securitySchemes':{'bearerAuth':{'type':'http','scheme':'bearer'}},'schemas':S}}
 for (method,path),(response,request) in routes.items():
     data={'type':'null'} if response is None else arr(ref(response[1:-1])) if response.startswith('[') else ref(response)
-    op={'operationId':method+'_'+re.sub(r'[^a-zA-Z0-9]+','_',path).strip('_'),'tags':['管理后台' if path.startswith('/admin') else '交易商城'],'summary':method.upper()+' '+path,'responses':{'200':{'description':'成功；data为业务数据，空操作为null','content':{'application/json':{'schema':{'type':'object','properties':{'code':{'type':'string','const':'OK'},'message':string(),'requestId':string(),'data':data},'required':['code','message','data','requestId']}}}},**{str(status):{'description':desc,'content':{'application/json':{'schema':ref('Error')}}} for status,desc in [(400,'字段格式错误'),(401,'登录失效'),(403,'角色权限不足'),(404,'记录不存在或无权访问'),(409,'状态、余额、库存、幂等或规则冲突'),(429,'操作限流'),(503,'配置缺失或渠道结果待确认')]}},'security':[] if path.startswith('/auth/') or path in ['/config','/categories','/products','/products/{id}','/rules/public'] else [{'bearerAuth':[]}]}
+    op={'operationId':method+'_'+re.sub(r'[^a-zA-Z0-9]+','_',path).strip('_'),'tags':['管理后台' if path.startswith('/admin') else '交易商城'],'summary':method.upper()+' '+path,'responses':{'200':{'description':'成功；data为业务数据，空操作为null','content':{'application/json':{'schema':{'type':'object','properties':{'code':{'type':'string','const':'OK'},'message':string(),'requestId':string(),'data':data},'required':['code','message','data','requestId']}}}},**{str(status):{'description':desc,'content':{'application/json':{'schema':ref('Error')}}} for status,desc in [(400,'字段格式错误'),(401,'登录失效'),(403,'角色权限不足'),(404,'记录不存在或无权访问'),(409,'状态、余额、库存、幂等或规则冲突'),(429,'操作限流'),(503,'配置缺失或渠道结果待确认')]}},'security':[] if path.startswith('/auth/') or path in ['/config','/categories','/products','/products/{id}','/products/page','/rules/public'] else [{'bearerAuth':[]}]}
     parameters=[]
     for p in re.findall(r'\{(\w+)\}',path):parameters.append({'name':p,'in':'path','required':True,'schema':num() if p=='sku' or (p=='id' and any(x in path for x in ['products','addresses','members','rules','settlements','issues'])) else string()})
     if method=='post' and path in ['/orders','/refunds','/me/withdrawals']:parameters.append({'name':'Idempotency-Key','in':'header','required':True,'description':'8至80位，同会员同操作同键同内容返回原响应，内容改变409','schema':{'type':'string','minLength':8,'maxLength':80}})
     if method=='get' and path=='/products':parameters.extend([{'name':p,'in':'query','schema':string()} for p in ['category','search']])
+    if path in ['/products/page','/admin/records/{resource}','/me/records/{resource}']:
+      parameters.extend([{'name':'page','in':'query','schema':{'type':'integer','minimum':1,'maximum':1000000,'default':1}},{'name':'size','in':'query','schema':{'type':'integer','minimum':1,'maximum':100,'default':20}},{'name':'search','in':'query','schema':{'type':'string','maxLength':100},'description':'全量记录的字面搜索，通配符不展开'},{'name':'state','in':'query','schema':{'type':'string','pattern':'^[A-Z_]{0,40}$'}},{'name':'asset','in':'query','schema':{'type':'string','enum':['points','points_held','available','reserved','debt']},'description':'仅ledger资源适用'}])
+      if path=='/products/page':parameters.extend([{'name':'categoryId','in':'query','schema':num()},{'name':'points','in':'query','schema':boolean()},{'name':'sort','in':'query','schema':{'type':'string','enum':['curated','priceUp','priceDown'],'default':'curated'}}])
+      for parameter in parameters:
+       if parameter['name']=='resource':
+        parameter['schema']['enum']=['products','orders','refunds','members','commissions','ledger','withdrawals','rules','settlements','accounts','audit','issues','outbox','reconcile-batches'] if path.startswith('/admin/') else ['orders','ledger','commissions','withdrawals','awards','invites','second-invites']
     if parameters:op['parameters']=parameters
-    if request:op['requestBody']={'required':True,'content':{'application/json':{'schema':ref(request)}}}
+    if request:op['requestBody']={'required':request!='PrepayRequest','content':{'application/json':{'schema':ref(request)}}}
     if '/dev/' in path or path=='/auth/dev':op['description']='仅APP_DEV_MODE=true可调用。禁止用于生产资金事实。'
-    if path=='/orders/{no}/prepay':op['description']='微信原生支付参数。生产缺真实微信绑定时返回WECHAT_BINDING_REQUIRED，且不标记预支付。开发环境返回mode=DEVELOPMENT和orderNo。'
+    if path=='/orders/{no}/prepay':op['description']='可选channel为MINI_PROGRAM/NATIVE/H5；无body保持小程序JSAPI。首次预付后通道锁定，原通道可恢复，不允许跨产品重复收费。小程序要求微信绑定；网页扫码/H5不要求绑定。开发环境返回明确DEVELOPMENT。'
     if path=='/me/identity':op['description']='姓名/身份证二要素信息匹配，非人脸活体；仅返回脱敏信息。开发模拟development=true，不具备生产提现资格。'
     if path in ['/auth/phone/code','/me/phone/code']:op['description']='验证码300秒有效，重发冷却60秒、最多5次错误，绑定用途及会员隔离。devCode仅开发模式返回。'
     if path=='/auth/phone':op['description']='短信验证码单次消费；首次登录自动注册，accepted必须true。验证码不授予管理权限，不自动合并已有账户。'

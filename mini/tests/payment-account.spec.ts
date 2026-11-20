@@ -49,3 +49,51 @@ describe("WeChat payment eligibility after phone login", () => {
     expect(fake.nativePay).not.toHaveBeenCalled();
   });
 });
+
+it("does not invoke mini payment for an order whose web channel is already selected", async () => {
+  const { payOrder, browserOrderLink } = await import(
+    "../src/utils/orderPayment"
+  );
+  await expect(payOrder("SJ1", false, "NATIVE")).rejects.toThrow("网页支付");
+  expect(fake.refresh).not.toHaveBeenCalled();
+  expect(fake.prepay).not.toHaveBeenCalled();
+  expect(browserOrderLink("https://store.example.test/", "SJ 1")).toBe(
+    "https://store.example.test/orders/SJ%201",
+  );
+  expect(() => browserOrderLink("javascript:alert(1)", "SJ1")).toThrow(
+    "未正确配置",
+  );
+});
+it("does not mistake a real web prepay payload for a development payment", async () => {
+  fake.profile.wechatBound = true;
+  fake.prepay.mockResolvedValue({
+    mode: "H5",
+    h5Url: "https://pay.example.test",
+    orderNo: "SJ1",
+  });
+  const { payOrder } = await import("../src/utils/orderPayment");
+  await expect(payOrder("SJ1", true)).rejects.toThrow("网页支付");
+  expect(fake.devPay).not.toHaveBeenCalled();
+});
+it("keeps querying the server after native payment cancellation", async () => {
+  fake.profile.wechatBound = true;
+  fake.prepay.mockResolvedValue({
+    timeStamp: "1",
+    nonceStr: "n",
+    package: "prepay_id=p",
+    signType: "RSA",
+    paySign: "s",
+  });
+  fake.nativePay.mockRejectedValue({ errMsg: "requestPayment:fail cancel" });
+  const { payOrder } = await import("../src/utils/orderPayment");
+  await payOrder("SJ1", false);
+  expect(fake.status).toHaveBeenCalledWith("SJ1");
+  expect(fake.devPay).not.toHaveBeenCalled();
+});
+it("prevents new payment while channel cancellation is being reconciled", async () => {
+  const { payOrder } = await import("../src/utils/orderPayment");
+  await expect(
+    payOrder("SJ1", false, "MINI_PROGRAM", "CLOSING"),
+  ).rejects.toThrow("正在核对取消");
+  expect(fake.prepay).not.toHaveBeenCalled();
+});

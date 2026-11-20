@@ -1,0 +1,39 @@
+test_backup_failure_removes_output_and_redacts_database_errors (test_configuration.ConfigurationTests.test_backup_failure_removes_output_and_redacts_database_errors) ... ok
+test_backup_produces_distinct_verified_archives (test_configuration.ConfigurationTests.test_backup_produces_distinct_verified_archives) ... ok
+test_bad_file_diagnostics_do_not_contain_secret_values (test_configuration.ConfigurationTests.test_bad_file_diagnostics_do_not_contain_secret_values) ... ok
+test_builds_isolate_runtime_credentials_and_database_targets (test_configuration.ConfigurationTests.test_builds_isolate_runtime_credentials_and_database_targets) ... ok
+test_dotenv_handles_bom_crlf_chinese_json_and_literal_shell (test_configuration.ConfigurationTests.test_dotenv_handles_bom_crlf_chinese_json_and_literal_shell) ... ok
+test_explicit_empty_config_never_discovers_repository_dotenv (test_configuration.ConfigurationTests.test_explicit_empty_config_never_discovers_repository_dotenv) ... ok
+test_explicit_empty_value_wins_over_lower_file (test_configuration.ConfigurationTests.test_explicit_empty_value_wins_over_lower_file) ... ok
+test_explicit_missing_config_fails_without_exposing_input (test_configuration.ConfigurationTests.test_explicit_missing_config_fails_without_exposing_input) ... ok
+test_external_backup_preserves_tls_and_keeps_password_out_of_arguments (test_configuration.ConfigurationTests.test_external_backup_preserves_tls_and_keeps_password_out_of_arguments) ... ok
+test_external_backup_rejects_nonstandard_or_embedded_credentials (test_configuration.ConfigurationTests.test_external_backup_rejects_nonstandard_or_embedded_credentials) ... ok
+test_external_database_does_not_fall_back_to_embedded_defaults (test_configuration.ConfigurationTests.test_external_database_does_not_fall_back_to_embedded_defaults) ... ok
+test_external_restore_keeps_container_stdin_open_without_exposing_password (test_configuration.ConfigurationTests.test_external_restore_keeps_container_stdin_open_without_exposing_password) ... ok
+test_file_secret_precedence_and_preserved_whitespace (test_configuration.ConfigurationTests.test_file_secret_precedence_and_preserved_whitespace) ... ok
+test_json_java_arguments_preserve_windows_paths_without_shell (test_configuration.ConfigurationTests.test_json_java_arguments_preserve_windows_paths_without_shell) ... ok
+test_multiline_and_internal_json_quotes_preserve_hash (test_configuration.ConfigurationTests.test_multiline_and_internal_json_quotes_preserve_hash) ... ok
+test_mysql_domain_callbacks_and_port_are_derived_from_one_config (test_configuration.ConfigurationTests.test_mysql_domain_callbacks_and_port_are_derived_from_one_config) ... ok
+test_process_only_known_file_settings_resolve_but_host_tool_files_do_not (test_configuration.ConfigurationTests.test_process_only_known_file_settings_resolve_but_host_tool_files_do_not) ... ok
+test_relative_paths_and_restore_file_are_data_not_secret_indirection (test_configuration.ConfigurationTests.test_relative_paths_and_restore_file_are_data_not_secret_indirection) ... ok
+test_restore_rejects_missing_confirmation_bad_checksum_and_corrupt_archive (test_configuration.ConfigurationTests.test_restore_rejects_missing_confirmation_bad_checksum_and_corrupt_archive) ... ok
+test_runtime_plan_contains_references_and_readonly_key_mounts_not_credentials (test_configuration.ConfigurationTests.test_runtime_plan_contains_references_and_readonly_key_mounts_not_credentials) ... ok
+test_validation_aggregates_names_without_credential_values (test_configuration.ConfigurationTests.test_validation_aggregates_names_without_credential_values) ... ok
+
+----------------------------------------------------------------------
+Ran 21 tests in 0.064s
+
+OK
+
+Additional isolated configuration verification (2026-11-19, America/Los_Angeles):
+- manage.py --help: passed
+- git diff --check: passed
+- Fresh generated 2048-bit RSA private/public keys and X509 certificate; no real user .env read.
+- UTF-8 BOM/CRLF, Chinese JSON, JDBC &, literal $(), relative file resolution: passed.
+- Production fixture + Docker Compose config --quiet: external HTTPS passed.
+- Production fixture + Docker Compose config --quiet: Caddy automatic HTTPS passed.
+- Production fixture + Docker Compose config --quiet: supplied certificate HTTPS passed.
+- External MySQL + read-only custom CA + Docker Compose config --quiet: passed.
+- No production container started, no real SMS/payment request, no public certificate issued by these checks.
+
+Final additions: pure environment *_FILE parsing, build credential isolation, and interactive external-restore stdin regression passed.

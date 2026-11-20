@@ -4,6 +4,7 @@ import axios, {
   type AxiosAdapter,
   type AxiosRequestConfig,
   type AxiosResponse,
+  type InternalAxiosRequestConfig,
 } from "axios";
 import { authStorage } from "./storage";
 interface Envelope<T> {
@@ -15,6 +16,10 @@ interface Envelope<T> {
 export interface RequestOptions extends AxiosRequestConfig {
   idempotencyKey?: string;
   anonymous?: boolean;
+}
+interface SessionRequestConfig extends InternalAxiosRequestConfig {
+  anonymous?: boolean;
+  sessionToken?: string;
 }
 export class RequestError extends Error {
   readonly notified = true;
@@ -80,18 +85,29 @@ const client = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 client.interceptors.request.use((config) => {
-  const token = (config as typeof config & { anonymous?: boolean }).anonymous
-    ? ""
-    : authStorage.token();
+  const authenticated = config as SessionRequestConfig;
+  const token = authenticated.anonymous ? "" : authStorage.token();
+  authenticated.sessionToken = token;
   if (token) config.headers.set("Authorization", "Bearer " + token);
   return config;
 });
+function staleSession(config?: AxiosRequestConfig): boolean {
+  const request = config as SessionRequestConfig | undefined;
+  return (
+    !!request &&
+    !request.anonymous &&
+    typeof request.sessionToken === "string" &&
+    request.sessionToken !== authStorage.token()
+  );
+}
 function notify(error: RequestError): never {
   uni.showToast({ title: error.message, icon: "none" });
   throw error;
 }
 client.interceptors.response.use(
   (response) => {
+    if (staleSession(response.config))
+      throw new RequestError("登录状态已变化，请重新操作", "SESSION_CHANGED");
     const body = response.data as Envelope<unknown>;
     if (!body || typeof body !== "object" || typeof body.code !== "string")
       return notify(
@@ -104,6 +120,8 @@ client.interceptors.response.use(
     return response;
   },
   (error: AxiosError<Envelope<unknown>>) => {
+    if (staleSession(error.config))
+      throw new RequestError("登录状态已变化，请重新操作", "SESSION_CHANGED");
     if (
       error.response?.status === 401 &&
       !(

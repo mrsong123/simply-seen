@@ -27,6 +27,11 @@ management:
   endpoint:
     health:
       show-details: never
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: readinessState,db
 springdoc:
   api-docs:
     enabled: ${API_DOCS_ENABLED:true}

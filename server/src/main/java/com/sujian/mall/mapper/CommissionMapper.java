@@ -19,8 +19,13 @@ public interface CommissionMapper extends BaseMapper<Commission> {
   @Select("SELECT COUNT(*) FROM commission WHERE order_id=#{orderId}")
   long countForCommission(@Param("orderId") String orderId);
 
-  @Select("SELECT COALESCE(SUM(original_amount),0) FROM commission WHERE created_at>=#{createdAt}")
-  long countForCommission2(@Param("createdAt") long createdAt);
+  @Select(
+      "SELECT c.original_amount FROM commission c"
+          + " JOIN shop_order o ON o.id=c.order_id"
+          + " WHERE o.paid_at>=#{paidMonthStart} AND o.paid_at<#{nextPaidMonthStart} FOR UPDATE")
+  List<Long> listOriginalAmountsForPaidMonthBudget(
+      @Param("paidMonthStart") long paidMonthStart,
+      @Param("nextPaidMonthStart") long nextPaidMonthStart);
 
   @Insert(
       "INSERT INTO"

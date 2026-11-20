@@ -98,7 +98,9 @@ public class FinanceAdminOperations {
   @Transactional
   public void resolve(long actor, long id, Map<String, Object> b) {
     Problem.require(s(b, "reason").length() >= 4, "REASON_REQUIRED", "请填写实际处理依据，至少4字");
-    issueMapper.updateForResolve(id);
+    var issue = com.sujian.mall.common.Rows.required(issueMapper.lockIssue(id));
+    Problem.require(s(issue, "state").equals("OPEN"), "ISSUE_STATE", "工单已处理，请刷新记录");
+    Problem.require(issueMapper.updateForResolve(id) == 1, "ISSUE_STATE", "工单状态已变化，请刷新重试");
     d.audit(actor, "ISSUE_RESOLVE", "" + id, b);
   }
 }

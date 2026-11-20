@@ -7,8 +7,8 @@ export const useAppStore = defineStore("app", () => {
     rules = ref<PublicRule | null>(null),
     categories = ref<Category[]>([]);
   let pending: Promise<void> | undefined;
-  async function load() {
-    if (config.value && rules.value) return;
+  async function load(force = false) {
+    if (!force && config.value && rules.value) return;
     if (pending) return pending;
     pending = Promise.all([
       catalogApi.config(),

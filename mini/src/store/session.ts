@@ -8,21 +8,25 @@ import { authStorage } from "../utils/storage";
 import { wechatLoginCode } from "../utils/wechat";
 export const useSessionStore = defineStore("session", () => {
   const profile = ref<Member | null>(null);
+  const hasStoredSession = ref(!!authStorage.token());
   const authenticated = computed(() => !!profile.value);
   let revision = 0;
   function clear() {
     revision++;
     profile.value = null;
     authStorage.clear();
+    hasStoredSession.value = false;
   }
   uni.$on("session-expired", clear);
   async function refresh() {
     const token = authStorage.token(),
       current = revision;
     if (!token) {
+      hasStoredSession.value = false;
       profile.value = null;
       return;
     }
+    hasStoredSession.value = true;
     const data = await memberApi.profile();
     if (current === revision && token === authStorage.token())
       profile.value = data;
@@ -32,6 +36,7 @@ export const useSessionStore = defineStore("session", () => {
     const data = await operation();
     if (current !== revision) throw new Error("登录状态已变化，请重新操作");
     authStorage.saveToken(data.token);
+    hasStoredSession.value = true;
     profile.value = data.profile;
   }
   async function login() {
@@ -83,6 +88,7 @@ export const useSessionStore = defineStore("session", () => {
   return {
     profile,
     authenticated,
+    hasStoredSession,
     refresh,
     login,
     loginDev,

@@ -2,6 +2,7 @@ package com.sujian.mall.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /** Persistent row for shop_order. */
 @TableName("shop_order")
@@ -21,6 +22,18 @@ public class ShopOrder {
   @TableField("payment_state")
   @JsonProperty("payment_state")
   private String paymentState;
+
+  @TableField("payment_channel")
+  @JsonProperty("payment_channel")
+  private String paymentChannel;
+
+  @TableField("payment_payer_openid")
+  @JsonIgnore
+  private String paymentPayerOpenid;
+
+  @TableField("payment_app_id")
+  @JsonIgnore
+  private String paymentAppId;
 
   @TableField("item_amount")
   @JsonProperty("item_amount")
@@ -117,6 +130,13 @@ public class ShopOrder {
   public void setPaymentState(String value) {
     this.paymentState = value;
   }
+
+  public String getPaymentChannel() { return paymentChannel; }
+  public void setPaymentChannel(String value) { paymentChannel = value; }
+  public String getPaymentPayerOpenid() { return paymentPayerOpenid; }
+  public void setPaymentPayerOpenid(String value) { paymentPayerOpenid = value; }
+  public String getPaymentAppId() { return paymentAppId; }
+  public void setPaymentAppId(String value) { paymentAppId = value; }
 
   public Long getItemAmount() {
     return itemAmount;

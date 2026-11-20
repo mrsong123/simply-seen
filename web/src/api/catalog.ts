@@ -1,3 +1,4 @@
+import type { PageResult, PageQuery } from "@/types/pagination";
 import type {
   Category,
   ProductCard,
@@ -7,6 +8,7 @@ import type {
 } from "@/types/models";
 import request from "@/utils/request";
 export const catalogApi = {
+  getProductsPage: (params: PageQuery & { categoryId?: string; points?: boolean; sort?: string }) => request.get<PageResult>("/products/page", { params, sessionKind: "none" }),
   getConfig: () =>
     request.get<PublicConfig>("/config", { sessionKind: "none" }),
   getCategories: () =>

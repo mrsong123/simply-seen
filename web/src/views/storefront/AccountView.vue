@@ -6,13 +6,17 @@ import { useRouter } from "vue-router";
 import { useAuthStore } from "@/store/auth";
 import { memberApi } from "@/api/member";
 import { useAction } from "@/composables/useAction";
+import { useMemberRecords } from "@/composables/useMemberRecords";
+import PageNavigation from "@/components/common/PageNavigation.vue";
+import ResourceState from "@/components/common/ResourceState.vue";
 import AccountHeader from "@/components/storefront/AccountHeader.vue";
 import NameDialog from "@/components/storefront/NameDialog.vue";
 const auth = useAuthStore(),
   router = useRouter();
 const profile = computed(() => auth.memberProfile || auth.member?.profile);
-const ledger = ref<any[]>([]),
-  nameVisible = ref(false);
+const records = useMemberRecords<any>("ledger");
+const ledger = records.items;
+const nameVisible = ref(false);
 const { run } = useAction();
 const assets = [
   ["points", "可用积分", "Gift"],
@@ -22,7 +26,6 @@ const assets = [
 onMounted(() =>
   run(async () => {
     await auth.fetchMemberProfile();
-    ledger.value = await memberApi.getLedger();
   }),
 );
 </script>
@@ -59,6 +62,7 @@ onMounted(() =>
             ['addresses', '地址管理', 'MapPin'],
             ['share', '分享与佣金', 'Share2'],
             ['withdraw', '佣金提现', 'Wallet'],
+            ['awards', '月度奖励', 'Gift'],
           ]"
           :key="link[0]"
           :to="'/' + link[0]"
@@ -67,8 +71,11 @@ onMounted(() =>
         /></RouterLink>
       </div>
       <div class="panel">
-        <h3>最近资产明细</h3>
-        <div v-for="l in ledger.slice(0, 8)" :key="l.id" class="history-row">
+        <h3>资产明细</h3>
+        <label class="input-label">查找明细<input :value="records.search.value" aria-label="搜索资产明细" @input="records.setSearch(($event.target as HTMLInputElement).value)" /></label>
+        <select :value="records.asset.value" aria-label="资产类型" @change="records.setAsset(($event.target as HTMLSelectElement).value)"><option value="">全部资产</option><option v-for="asset in ['points', 'points_held', 'available', 'reserved', 'debt']" :key="asset" :value="asset">{{ label(asset) }}</option></select>
+        <ResourceState :loading="records.loading.value" :error="records.error.value" @retry="records.load" />
+        <div v-for="l in (records.error.value ? [] : ledger)" :key="l.id" class="history-row">
           <div>
             <strong>{{ l.note }}</strong>
             <p>{{ label(l.asset) }} · {{ date(l.created_at) }}</p>
@@ -80,7 +87,8 @@ onMounted(() =>
             }}</span
           >
         </div>
-        <p v-if="!ledger.length" class="muted">暂无资产变动记录。</p>
+        <PageNavigation :records="records" label="资产" />
+        <p v-if="!records.loading.value && !records.error.value && !ledger.length" class="muted">暂无资产变动记录。</p>
       </div>
       <button
         class="text-link muted"

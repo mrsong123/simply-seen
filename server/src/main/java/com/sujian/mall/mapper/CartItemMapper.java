@@ -8,8 +8,8 @@ import org.apache.ibatis.annotations.*;
 public interface CartItemMapper {
 
   @Select(
-      "SELECT c.sku_id,c.quantity,s.name AS sku_name,s.price,s.stock-s.held AS stock,p.id AS"
-          + " product_id,p.name,p.image,p.color,p.status FROM cart_item c JOIN sku s ON"
+      "SELECT c.sku_id,c.quantity,s.name AS sku_name,s.price,CASE WHEN s.active=TRUE THEN s.stock-s.held ELSE 0 END AS stock,p.id AS"
+          + " product_id,p.name,p.image,p.color,CASE WHEN s.active=TRUE THEN p.status ELSE 'OFF_SALE' END AS status FROM cart_item c JOIN sku s ON"
           + " c.sku_id=s.id JOIN product p ON s.product_id=p.id WHERE c.member_id=#{memberId} ORDER"
           + " BY p.id")
   List<Map<String, Object>> listForCart(@Param("memberId") long memberId);

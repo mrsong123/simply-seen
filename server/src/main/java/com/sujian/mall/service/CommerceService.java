@@ -42,6 +42,8 @@ public interface CommerceService {
 
   Object prepay(long uid, String no);
 
+  Object prepay(long uid, String no, String channel, String clientIp);
+
   void synchronizePayment(String no);
 
   void paymentEvidence(Map<String, Object> r);

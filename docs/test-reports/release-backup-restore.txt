@@ -1,0 +1,17 @@
+Actual manage.py backup against isolated MySQL 8.4: passed
+SHA-256, full gzip decompression, private backup/checksum/directory modes: passed
+Restore without explicit confirmation rejected before database client launch: passed
+Actual manage.py restore to a newly created separate _test database: passed
+All table row counts and complete deterministic SQL content match: passed (35 tables)
+Ledger asset counts, changes and resulting-balance aggregates match: passed
+Tampered SHA-256 and checksum-valid truncated gzip rejected before database client launch: passed
+Target data unchanged after rejected corrupt restores: passed
+Original source database logical content unchanged: passed
+member row count preserved: 17
+shop_order row count preserved: 4
+ledger row count preserved: 16
+commission row count preserved: 6
+refund row count preserved: 1
+withdrawal row count preserved: 2
+Original source database/container preserved; temporary restore database/grant/network removed: passed
+Independent cleanup check: no owned restore schemas, grants or networks remain; original MySQL container running.

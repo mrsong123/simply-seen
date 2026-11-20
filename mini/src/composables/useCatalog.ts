@@ -3,31 +3,34 @@ import { useAppStore } from "../store/app";
 import { useSessionStore } from "../store/session";
 import { catalogApi } from "../api/catalog";
 import { useTask } from "../utils/useTask";
+import { usePagedRecords } from "./usePagedRecords";
 import type { Product } from "../types/models";
 export function useCatalog(pointsOnly: () => boolean) {
   const app = useAppStore(),
     session = useSessionStore();
-  const { run } = useTask();
-  const products = ref<Product[]>([]),
-    search = ref(""),
+  const { busy, run } = useTask();
+  const search = ref(""),
     category = ref("");
-  const visible = computed(() =>
-    pointsOnly()
-      ? products.value.filter((item) => item.points_percent > 0)
-      : products.value,
-  );
+  const records = usePagedRecords<Product>(async (page, size) => {
+    await app.load(page === 1);
+    return catalogApi.page(
+      page,
+      size,
+      category.value,
+      search.value,
+      pointsOnly(),
+    );
+  });
+  const visible = computed(() => records.items.value);
   async function searchProducts() {
-    products.value = await catalogApi.products(category.value, search.value);
+    await records.reload();
   }
   async function reload() {
-    // Session data is optional on the public catalog and must never gate it.
     void session.refresh().catch(() => undefined);
-    await run(async () => {
-      await app.load();
-      await searchProducts();
-    });
+    await run(searchProducts);
   }
   function selectCategory(id: string) {
+    if (busy.value) return;
     category.value = id;
     void run(searchProducts);
   }
@@ -37,6 +40,15 @@ export function useCatalog(pointsOnly: () => boolean) {
     search,
     category,
     visible,
+    busy,
+    loaded: records.loaded,
+    loadError: records.failed,
+    total: records.total,
+    page: records.page,
+    totalPages: records.totalPages,
+    loading: records.loading,
+    next: records.next,
+    retry: records.retry,
     run,
     reload,
     searchProducts,

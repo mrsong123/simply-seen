@@ -3,11 +3,13 @@ import { computed, ref } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
 import PageShell from "../../components/PageShell.vue";
 import PageHeading from "../../components/PageHeading.vue";
+import PageLoadState from "../../components/PageLoadState.vue";
 import { useAppStore } from "../../store/app";
 import { useTask } from "../../utils/useTask";
 const app = useAppStore(),
   type = ref("terms");
-const { run } = useTask();
+const { busy, run } = useTask();
+const loaded = ref(false), loadError = ref(false);
 const title = computed(
   () =>
     ({
@@ -19,15 +21,35 @@ const title = computed(
 );
 onLoad((options) => {
   type.value = options?.type || "terms";
-  void run(() => app.load());
+  void reload();
 });
-function copySupport() {
-  uni.setClipboardData({ data: app.config?.support || "" });
+async function reload() {
+  await run(async () => {
+    loadError.value = false;
+    try {
+      await app.load(true);
+      loaded.value = true;
+    } catch (error) {
+      loadError.value = true;
+      throw error;
+    }
+  });
+}
+async function copySupport() {
+  await run(async () => {
+    const data = app.config?.support?.trim();
+    if (!data) throw new Error("联系方式暂不可用，请重新读取后再试");
+    await new Promise<void>((resolve, reject) =>
+      uni.setClipboardData({ data, success: () => resolve(), fail: reject }),
+    );
+  });
 }
 </script>
 <template>
   <PageShell
-    ><PageHeading :title="title" /><view class="box"
+    ><PageHeading :title="title" />
+    <PageLoadState :loading="busy && !loaded" :failed="loadError" @retry="reload" />
+    <view v-if="loaded && !loadError" class="box"
       ><template v-if="type === 'privacy'"
         ><text class="description"
           >我们仅处理服务必需的信息：微信身份标识用于登录和绑定；经您主动请求发送的短信验证码用于手机号登录或绑定，首次验证的新手机号会注册独立会员。手机号与短信发送参数会提供给短信服务商，验证码有有效期、单次使用及频率限制，不用于营销推送。实名认证会在取得您单独同意后，将姓名和大陆居民身份证号码提供给认证服务商核验一致性，用于账户安全与提现准入，不包含人脸或活体识别。服务端加密保存必要信息，页面只展示脱敏结果；姓名和身份证原文不写入小程序本地缓存，提交后或离开页面即清空表单。开发模拟结果不代表真实认证，不可用于生产提现。
@@ -52,7 +74,7 @@ function copySupport() {
             app.config?.support
           }}。订单售后请通过订单详情提交申请。个人信息查询、复制及注销请联系
           {{ app.config?.privacy }}。</text
-        ><button class="secondary" @tap="copySupport">
+        ><button class="secondary" :disabled="busy" @tap="copySupport">
           复制联系方式
         </button></template
       ><template v-else

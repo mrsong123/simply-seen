@@ -16,6 +16,7 @@ export const labels: Record<string, string> = {
   PAID: "待发货",
   SHIPPED: "待收货",
   COMPLETED: "已完成",
+  CLOSING: "正在取消",
   CLOSED: "已关闭",
   REFUNDED: "已退款",
   SUCCESS: "已成功",

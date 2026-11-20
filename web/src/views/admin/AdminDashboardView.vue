@@ -5,9 +5,10 @@ import { useAuthStore } from "@/store/auth";
 import { useAdminResource } from "@/composables/admin/useAdminResource";
 import { money } from "@/utils/format";
 import Icon from "@/components/common/Icon.vue";
+import ResourceState from "@/components/common/ResourceState.vue";
 import AdminPageHeader from "@/components/admin/AdminPageHeader.vue";
 const auth = useAuthStore();
-const { data, loading, load } = useAdminResource<any>(() =>
+const { data, loading, error, load } = useAdminResource<any>(() =>
   adminApi.getSummary(),
 );
 const summary = computed(() => data.value || {});
@@ -43,7 +44,8 @@ const metrics = computed(() => [
 </script>
 <template>
   <AdminPageHeader page="overview" :busy="loading" @refresh="load" />
-  <div class="metrics">
+  <ResourceState :loading="loading" :error="error" @retry="load" />
+  <template v-if="!loading && !error"><div class="metrics">
     <div v-for="(metric, index) in metrics" :key="index" class="metric-card">
       <div>
         <span>{{ metric[0] }}</span
@@ -112,4 +114,4 @@ const metrics = computed(() => [
       >查看商城 <Icon name="ArrowRight" :size="16"
     /></RouterLink>
   </div>
-</template>
+</template></template>

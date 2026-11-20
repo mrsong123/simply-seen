@@ -42,7 +42,8 @@ public class WithdrawalServiceImpl implements WithdrawalService {
           long amount = n(b, "amountFen");
           var m = com.sujian.mall.common.Rows.required(memberMapper.lockAccountById(uid));
           Problem.require(
-              amount >= c.integer("WITHDRAW_MIN_FEN", 1000)
+              !b(m, "blocked")
+                  && amount >= c.integer("WITHDRAW_MIN_FEN", 1000)
                   && amount <= Math.min(200000, c.integer("WITHDRAW_MAX_FEN", 200000))
                   && n(m, "available") >= amount
                   && n(m, "debt") == 0,
@@ -103,12 +104,18 @@ public class WithdrawalServiceImpl implements WithdrawalService {
   @Transactional
   public void transferResult(String id, Map<String, Object> result) {
     var r = com.sujian.mall.common.Rows.required(withdrawalMapper.findForReviewWithdrawal(id));
-    if (List.of("SUCCESS", "FAILED", "REJECTED").contains(s(r, "state"))) return;
+    if (s(r, "state").equals("SUCCESS")) {
+      Problem.require(s(r, "channel_id").equals(s(result, "transfer_bill_no")),
+          "TRANSFER_CONFLICT", "重复出款通知的渠道交易单号不一致");
+      return;
+    }
+    if (List.of("FAILED", "REJECTED").contains(s(r, "state"))) return;
     Problem.require(
         List.of("SUBMITTED", "UNKNOWN", "CONFIRMING").contains(s(r, "state")),
         "WITHDRAW_STATE",
         "尚未授权出款");
     String state = s(result, "state");
+    Problem.require(!s(result, "transfer_bill_no").isBlank(), "TRANSFER_EVIDENCE", "缺少可信出款交易单号");
     if (state.equals("SUCCESS")) {
       shop.asset(
           n(r, "member_id"), "reserved", -n(r, "gross"), id + ":paid", null, "渠道确认佣金出款（含税款预留）");
@@ -116,8 +123,9 @@ public class WithdrawalServiceImpl implements WithdrawalService {
     } else if (List.of("FAIL", "CANCELLED").contains(state)) releaseWithdrawal(r, "FAILED");
     else
       withdrawalMapper.updateForTransferResult2(
-          state.equals("WAIT_USER_CONFIRM") ? "CONFIRMING" : "UNKNOWN",
-          s(result, "package_info"),
+          List.of("WAIT_USER_CONFIRM", "TRANSFERING").contains(state) ? "CONFIRMING" : "UNKNOWN",
+          result.containsKey("package_info") && !s(result, "package_info").isBlank()
+              ? s(result, "package_info") : s(r, "package_info"),
           s(result, "transfer_bill_no"),
           id);
   }

@@ -11,8 +11,9 @@ import RuleEditor from "@/components/admin/RuleEditor.vue";
 import RuleDetailDialog from "@/components/admin/RuleDetailDialog.vue";
 import ConfirmActionDialog from "@/components/admin/ConfirmActionDialog.vue";
 const auth = useAuthStore();
-const { data, loading, load } = useAdminResource<any[]>(() =>
+const { data, loading, error, load } = useAdminResource<any[]>(() =>
   adminApi.getRules(),
+  "rules",
 );
 const rows = computed(() => data.value || []),
   isAdmin = computed(
@@ -48,11 +49,15 @@ function saved() {
     :columns="adminDefinitions.rules.columns!"
     title="活动与分销规则"
     :loading="loading"
+    :error="error"
+    @retry="load"
     icon="SlidersHorizontal"
     ><template #actions="{ row }"
       ><button class="text-link" @click="detail = row">查看</button
       ><button
         v-if="row.state === 'DRAFT' && isAdmin"
+        :disabled="String(row.creator) === String(auth.adminProfile?.id)"
+        :title="String(row.creator) === String(auth.adminProfile?.id) ? '需另一名管理员复核' : '审批规则'"
         class="text-link"
         @click="approval = row"
       >

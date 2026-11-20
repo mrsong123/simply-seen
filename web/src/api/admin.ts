@@ -1,6 +1,8 @@
+import type { AdminRecordKind, PageQuery, PageResult } from "@/types/pagination";
 import request from "@/utils/request";
 const adminSession = { sessionKind: "admin" as const };
 export const adminApi = {
+  getRecords: (kind: AdminRecordKind, params: PageQuery) => request.get<PageResult>(`/admin/records/${kind}`, { ...adminSession, params }),
   getProfile: () => request.get("/admin/me", adminSession),
   getSummary: () => request.get("/admin/summary", adminSession),
   getProducts: () => request.get("/admin/products", adminSession),

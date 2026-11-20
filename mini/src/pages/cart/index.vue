@@ -4,6 +4,8 @@ import PageShell from "../../components/PageShell.vue";
 import PageHeading from "../../components/PageHeading.vue";
 import LoginRequired from "../../components/LoginRequired.vue";
 import QuantityStepper from "../../components/QuantityStepper.vue";
+import PageLoadState from "../../components/PageLoadState.vue";
+import { ref } from "vue";
 import { useCartStore } from "../../store/cart";
 import { useSessionStore } from "../../store/session";
 import { useTask } from "../../utils/useTask";
@@ -12,10 +14,18 @@ import { money, image } from "../../utils/format";
 const cart = useCartStore(),
   session = useSessionStore();
 const { busy, run } = useTask();
+const loaded = ref(false), loadError = ref(false);
 async function reload() {
   await run(async () => {
-    await session.refresh();
-    await cart.refresh();
+    loadError.value = false;
+    try {
+      await session.refresh();
+      await cart.refresh();
+      loaded.value = true;
+    } catch (error) {
+      loadError.value = true;
+      throw error;
+    }
   });
 }
 onShow(reload);
@@ -29,7 +39,9 @@ function quantity(id: number, value: number) {
 </script>
 <template>
   <PageShell tab="cart"
-    ><PageHeading title="我的购物袋" subtitle="YOUR EVERYDAY" /><LoginRequired
+    ><PageHeading title="我的购物袋" subtitle="YOUR EVERYDAY" />
+    <PageLoadState :loading="busy && !loaded" :failed="loadError" @retry="reload" />
+    <LoginRequired
       v-if="!session.profile"
       message="登录后查看购物袋"
     /><template v-else
@@ -59,7 +71,7 @@ function quantity(id: number, value: number) {
         ><button class="primary" @tap="navigate('checkout')">
           前往结算 →
         </button></view
-      ><view v-else class="empty"
+      ><view v-else-if="loaded && !loadError" class="empty"
         ><text>购物袋还很轻盈</text
         ><button class="secondary" @tap="navigate('home')">
           去发现好物

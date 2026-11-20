@@ -5,8 +5,9 @@ import { adminDefinitions } from "@/config/admin";
 import { useAdminResource } from "@/composables/admin/useAdminResource";
 import AdminPageHeader from "@/components/admin/AdminPageHeader.vue";
 import AdminDataTable from "@/components/admin/AdminDataTable.vue";
-const { data, loading, load } = useAdminResource<any[]>(() =>
+const { data, loading, error, load } = useAdminResource<any[]>(() =>
   adminApi.getLedger(),
+  "ledger",
 );
 const rows = computed(() => data.value || []);
 </script>
@@ -20,6 +21,8 @@ const rows = computed(() => data.value || []);
     :columns="adminDefinitions.ledger.columns!"
     title="资产账本"
     :loading="loading"
+    :error="error"
+    @retry="load"
     icon="Wallet"
   />
 </template>

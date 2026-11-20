@@ -43,6 +43,7 @@ export interface AppConfig {
   distributionEnabled: boolean;
   transferEnabled: boolean;
   logisticsEnabled: boolean;
+  monthlyEnabled?: boolean;
   appId: string;
   mchId: string;
   support: string;
@@ -117,6 +118,7 @@ export interface Order {
   id: string;
   state: string;
   payment_state: string;
+  payment_channel?: "UNSELECTED" | "MINI_PROGRAM" | "NATIVE" | "H5";
   cash_due: number;
   cash_refunded: number;
   points_used: number;
@@ -195,4 +197,16 @@ export interface DevelopmentPrepay {
   mode: "DEVELOPMENT";
   orderNo: string;
 }
-export type Prepay = WechatPrepay | DevelopmentPrepay;
+export interface NativePrepay {
+  mode: "NATIVE";
+  codeUrl: string;
+  expiresAt: number;
+  orderNo: string;
+}
+export interface H5Prepay {
+  mode: "H5";
+  h5Url: string;
+  expiresAt: number;
+  orderNo: string;
+}
+export type Prepay = WechatPrepay | DevelopmentPrepay | NativePrepay | H5Prepay;

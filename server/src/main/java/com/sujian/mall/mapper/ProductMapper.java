@@ -56,8 +56,8 @@ public interface ProductMapper extends BaseMapper<Product> {
 
   @Select({
     "<script>",
-    "SELECT p.*, (SELECT MIN(price) FROM sku WHERE product_id=p.id) AS price, (SELECT"
-        + " SUM(stock-held) FROM sku WHERE product_id=p.id) AS stock FROM product p WHERE"
+    "SELECT p.*, (SELECT MIN(price) FROM sku WHERE product_id=p.id AND active=TRUE) AS price, (SELECT"
+        + " SUM(stock-held) FROM sku WHERE product_id=p.id AND active=TRUE) AS stock FROM product p WHERE"
         + " p.status='ON_SALE'",
     "<if test='categoryId != null'> AND p.category_id=#{categoryId}</if>",
     "<if test='search != null and search != &quot;&quot;'> AND p.name LIKE #{search}</if>",

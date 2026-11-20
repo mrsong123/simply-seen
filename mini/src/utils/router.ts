@@ -10,6 +10,7 @@ export const routes = {
   account: "/pages/account/index",
   security: "/pages/account/security",
   identity: "/pages/account/identity",
+  awards: "/pages/account/awards",
   addresses: "/pages/addresses/index",
   addressEdit: "/pages/addresses/edit",
   share: "/pages/promotion/index",
@@ -27,6 +28,7 @@ const protectedRoutes: RouteName[] = [
   "withdraw",
   "security",
   "identity",
+  "awards",
 ];
 export function pathFor(
   name: RouteName,
@@ -65,7 +67,28 @@ export function requireSession(
 export function afterLogin() {
   const target: string = uni.getStorageSync("sj-login-return");
   uni.removeStorageSync("sj-login-return");
-  if (target && target.startsWith("/pages/")) uni.redirectTo({ url: target });
+  if (typeof target !== "string") return;
+  const path = target.split("?")[0];
+  if (Object.values(routes).some((registered) => registered === path))
+    uni.redirectTo({ url: target });
+}
+export function requireCurrentSession(): boolean {
+  if (authStorage.token()) return true;
+  const pages = typeof getCurrentPages === "function" ? getCurrentPages() : [];
+  const current = pages[pages.length - 1];
+  const path = current?.route ? "/" + current.route.replace(/^\//, "") : "";
+  const found = Object.entries(routes).find(([, registered]) => registered === path);
+  if (found) {
+    const query: Record<string, string | number> = {};
+    const options = (current as typeof current & {
+      options?: Record<string, unknown>;
+    })?.options;
+    for (const [key, value] of Object.entries(options || {}))
+      if (typeof value === "string" || typeof value === "number") query[key] = value;
+    return requireSession(found[0] as RouteName, query);
+  }
+  uni.redirectTo({ url: routes.account });
+  return false;
 }
 export function back() {
   if (getCurrentPages().length > 1) uni.navigateBack();

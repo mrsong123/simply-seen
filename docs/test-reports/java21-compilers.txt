@@ -1,42 +1,9 @@
-2026-11-14: phone authentication and identity verification
-Default JDK21 javac, root reactor clean verify
-[INFO] Compiling 196 source files with javac [debug parameters release 21] to target/classes
-[INFO] Compiling 15 source files with javac [debug parameters release 21] to target/test-classes
-[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.413 s -- in com.sujian.mall.WechatSecurityTest
-[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 7.503 s -- in com.sujian.mall.LocalStartupTest
-[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.015 s -- in com.sujian.mall.LogisticsTest
-[INFO] Tests run: 16, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.117 s -- in com.sujian.mall.integration.aliyun.AccountProviderContractTest
-[INFO] Tests run: 17, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.045 s -- in com.sujian.mall.integration.aliyun.AliyunRpcClientTest
-[INFO] Tests run: 15, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 8.895 s -- in com.sujian.mall.CommerceTest
-[INFO] Tests run: 12, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.593 s -- in com.sujian.mall.PhoneAuthenticationTest
-[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.011 s -- in com.sujian.mall.ResidentIdentityTest
-[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.004 s -- in com.sujian.mall.AccountConfigurationTest
-[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.448 s -- in com.sujian.mall.PhoneAccountPaymentTest
-[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.010 s -- in com.sujian.mall.AccountDataProtectionTest
-[INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.637 s -- in com.sujian.mall.IdentityServiceTest
-[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.035 s -- in com.sujian.mall.ArchitectureTest
-[INFO] Tests run: 89, Failures: 0, Errors: 0, Skipped: 0
-[INFO] mall ............................................... SUCCESS [ 29.535 s]
-[INFO] Simply Seen Workspace .............................. SUCCESS [  0.002 s]
-[INFO] BUILD SUCCESS
-
-Cloud JRE21 explicit cloud-ecj, server clean verify
-[INFO] Compiling with eclipse [debug parameters release 21] to target/classes
-[INFO] Compiling with eclipse [debug parameters release 21] to target/test-classes
-[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.540 s -- in com.sujian.mall.WechatSecurityTest
-[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 8.934 s -- in com.sujian.mall.LocalStartupTest
-[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.006 s -- in com.sujian.mall.LogisticsTest
-[INFO] Tests run: 16, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.128 s -- in com.sujian.mall.integration.aliyun.AccountProviderContractTest
-[INFO] Tests run: 17, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.136 s -- in com.sujian.mall.integration.aliyun.AliyunRpcClientTest
-[INFO] Tests run: 15, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 9.757 s -- in com.sujian.mall.CommerceTest
-[INFO] Tests run: 12, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.951 s -- in com.sujian.mall.PhoneAuthenticationTest
-[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.005 s -- in com.sujian.mall.ResidentIdentityTest
-[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.006 s -- in com.sujian.mall.AccountConfigurationTest
-[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.517 s -- in com.sujian.mall.PhoneAccountPaymentTest
-[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.010 s -- in com.sujian.mall.AccountDataProtectionTest
-[INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.795 s -- in com.sujian.mall.IdentityServiceTest
-[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.032 s -- in com.sujian.mall.ArchitectureTest
-[INFO] Tests run: 89, Failures: 0, Errors: 0, Skipped: 0
-[INFO] BUILD SUCCESS
-
-Default Application.class target is Java21; Windows platform execution not performed in this Linux session.
+2026-11-19 (America/Los_Angeles): final compiler and database verification
+JDK21 javac/H2: Tests run: 150, Failures: 0, Errors: 0, Skipped: 1
+Cloud ECJ/MySQL8.4: Tests run: 150, Failures: 0, Errors: 0, Skipped: 0
+Official Temurin21 JDK: root aggregator clean verify, default javac [release 21], 229 main sources and 36 test sources.
+JDK and ECJ compile the same final Java source. ProductionProtocolTest is skipped only in H2, executed successfully on real MySQL.
+Final Application.class major version: 65 (Java21).
+Packaged OpenAPI matches docs/openapi.json byte for byte.
+JAR SHA-256: 9617b0e1b6aea296551e0119fcdfe48fbd23f9d046b9fd74aac33707817ffddc
+Windows CI configured; no Windows/IDE-local run is claimed by this Linux report.

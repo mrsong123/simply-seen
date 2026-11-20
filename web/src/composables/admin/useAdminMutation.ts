@@ -1,5 +1,6 @@
 import { ref } from "vue";
 import { useUiStore } from "@/store/ui";
+import { reportLocalFailure } from "@/utils/actionError";
 export function useAdminMutation() {
   const busy = ref(false);
   const ui = useUiStore();
@@ -10,7 +11,8 @@ export function useAdminMutation() {
       await task();
       if (success) ui.message(success);
       return true;
-    } catch {
+    } catch (failure) {
+      reportLocalFailure(failure, ui.message);
       return false;
     } finally {
       busy.value = false;

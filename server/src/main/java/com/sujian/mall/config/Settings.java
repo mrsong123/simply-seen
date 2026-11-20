@@ -2,6 +2,8 @@ package com.sujian.mall.config;
 
 import com.sujian.mall.common.Problem;
 import java.util.LinkedHashMap;
+import java.nio.file.Path;
+import com.sujian.mall.config.env.ConfigurationFiles;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
@@ -22,9 +24,56 @@ public class Settings {
   }
 
   public String get(String name, String fallback) {
-    return environment == null
-        ? System.getenv().getOrDefault(name, fallback)
-        : environment.getProperty(name, fallback);
+    String value = raw(name);
+    if (!Boolean.parseBoolean(raw("APP_CONFIG_FILES_RESOLVED")) && (value == null || value.isBlank())) {
+      String file = raw(name + "_FILE");
+      if (file != null && !file.isBlank()) value = ConfigurationFiles.secret(baseDirectory(), file, name);
+    }
+    if (value == null || value.isBlank()) {
+      String derived = derived(name);
+      if (derived != null) value = derived;
+    }
+    if (value == null) value = fallback;
+    if (name.endsWith("_BASE_URL") || name.equals("PUBLIC_STORE_URL") || name.equals("PUBLIC_API_URL") || name.equals("PUBLIC_ASSET_URL"))
+      value = value.replaceAll("/+$", "");
+    if (name.endsWith("_PATH") && !value.isBlank())
+      return ConfigurationFiles.resolve(baseDirectory(), value).toString();
+    return value;
+  }
+
+  private String raw(String name) {
+    return environment == null ? System.getenv(name) : environment.getProperty(name);
+  }
+
+  private Path baseDirectory() {
+    String configured = raw("APP_CONFIG_BASE_DIR");
+    return Path.of(configured == null || configured.isBlank() ? System.getProperty("user.dir") : configured)
+        .toAbsolutePath().normalize();
+  }
+
+  private String derived(String name) {
+    boolean embedded = !"external".equals(raw("DATABASE_MODE"));
+    if (embedded && name.equals("DATABASE_USER")) return raw("MYSQL_USER");
+    if (embedded && name.equals("DATABASE_PASSWORD")) return raw("MYSQL_PASSWORD");
+    if (name.equals("DATABASE_URL")) {
+      String database = raw("MYSQL_DATABASE");
+      if (embedded && database != null && database.matches("[A-Za-z0-9_]{1,64}"))
+        return "jdbc:mysql://mysql:3306/" + database + "?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia%2FShanghai&sslMode=REQUIRED";
+    }
+    String store = raw("PUBLIC_STORE_URL");
+    if (store == null || store.isBlank()) return null;
+    store = store.replaceAll("/+$", "");
+    if (name.equals("PUBLIC_API_URL")) return store + "/api/v1";
+    if (name.equals("PUBLIC_ASSET_URL")) return store;
+    String api = raw("PUBLIC_API_URL");
+    if (api == null || api.isBlank()) api = store + "/api/v1";
+    api = api.replaceAll("/+$", "");
+    return switch (name) {
+      case "WX_PAY_NOTIFY_URL" -> api + "/callbacks/wechat/pay";
+      case "WX_REFUND_NOTIFY_URL" -> api + "/callbacks/wechat/refund";
+      case "WX_TRANSFER_NOTIFY_URL" -> api + "/callbacks/wechat/transfer";
+      default -> null;
+    };
   }
 
   public String required(String name) {
@@ -53,6 +102,7 @@ public class Settings {
   public Map<String, Object> publicConfig() {
     var result = new LinkedHashMap<String, Object>();
     result.put("devMode", dev());
+    result.put("webPaymentMode", get("WX_WEB_PAYMENT_MODE", "native").trim().toLowerCase(java.util.Locale.ROOT));
     result.put("phoneLoginEnabled", true);
     result.put("identityVerificationEnabled", true);
     result.put("identityRequiredForWithdrawal", identityRequiredForWithdrawal());

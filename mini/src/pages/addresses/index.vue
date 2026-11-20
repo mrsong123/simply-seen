@@ -1,20 +1,36 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { onShow } from "@dcloudio/uni-app";
+import { onShow, onPullDownRefresh } from "@dcloudio/uni-app";
 import PageShell from "../../components/PageShell.vue";
 import PageHeading from "../../components/PageHeading.vue";
+import PageLoadState from "../../components/PageLoadState.vue";
 import { addressApi } from "../../api/address";
 import { useTask, confirm } from "../../utils/useTask";
 import { navigate, requireSession } from "../../utils/router";
 import { chooseShippingAddress } from "../../utils/wechat";
+import { saveAddressDraft } from "../../utils/addressDraft";
 import type { Address } from "../../types/models";
 const addresses = ref<Address[]>([]);
+const loaded = ref(false), loadError = ref(false);
 const { busy, run } = useTask();
 async function reload() {
   if (!requireSession("addresses")) return;
-  await run(async () => (addresses.value = await addressApi.list()));
+  await run(async () => {
+    loadError.value = false;
+    try {
+      addresses.value = await addressApi.list();
+      loaded.value = true;
+    } catch (error) {
+      loadError.value = true;
+      throw error;
+    }
+  });
 }
 onShow(reload);
+onPullDownRefresh(async () => {
+  await reload();
+  uni.stopPullDownRefresh();
+});
 async function remove(address: Address) {
   if (
     !address.id ||
@@ -29,14 +45,16 @@ async function remove(address: Address) {
 async function importAddress() {
   await run(async () => {
     const address = await chooseShippingAddress();
-    uni.setStorageSync("sj-address-draft", address);
+    saveAddressDraft(address);
     navigate("addressEdit", { imported: 1 });
   });
 }
 </script>
 <template>
   <PageShell
-    ><PageHeading title="收货地址" /><view
+    ><PageHeading title="收货地址" />
+    <PageLoadState :loading="busy && !loaded" :failed="loadError" @retry="reload" />
+    <view
       v-for="address in addresses"
       :key="address.id"
       class="box"
@@ -51,7 +69,7 @@ async function importAddress() {
           >编辑</text
         ><text class="link" @tap="remove(address)">删除</text></view
       ></view
-    ><view v-if="!addresses.length" class="empty">还没有收货地址</view
+    ><view v-if="loaded && !loadError && !addresses.length" class="empty">还没有收货地址</view
     ><view class="box"
       ><button class="primary" :disabled="busy" @tap="navigate('addressEdit')">
         手动添加地址</button

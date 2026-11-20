@@ -24,7 +24,7 @@ public class OrderController {
 
   @PostMapping("/checkout/quote")
   public Object quote(@Valid @RequestBody TradeRequests.Quote body, HttpServletRequest request) {
-    return shop.quote(auth.member(request).id(), body.toMap());
+    return MemberCommerceView.quote(shop.quote(auth.member(request).id(), body.toMap()));
   }
 
   @PostMapping("/orders")
@@ -32,22 +32,24 @@ public class OrderController {
       @RequestHeader("Idempotency-Key") String key,
       @Valid @RequestBody TradeRequests.CreateOrder body,
       HttpServletRequest request) {
-    return shop.create(auth.member(request).id(), key, body.toMap());
+    return MemberCommerceView.order(shop.create(auth.member(request).id(), key, body.toMap()));
   }
 
   @GetMapping("/orders")
   public Object orders(HttpServletRequest request) {
-    return shop.orders(auth.member(request).id());
+    return MemberCommerceView.orders(shop.orders(auth.member(request).id()));
   }
 
   @GetMapping("/orders/{no}")
   public Object order(@PathVariable String no, HttpServletRequest request) {
-    return shop.order(auth.member(request).id(), no);
+    return MemberCommerceView.order(shop.order(auth.member(request).id(), no));
   }
 
   @PostMapping("/orders/{no}/prepay")
-  public Object prepay(@PathVariable String no, HttpServletRequest request) {
-    return shop.prepay(auth.member(request).id(), no);
+  public Object prepay(@PathVariable String no,
+      @Valid @RequestBody(required = false) TradeRequests.Prepay body, HttpServletRequest request) {
+    return shop.prepay(auth.member(request).id(), no,
+        body == null ? "MINI_PROGRAM" : body.channel(), request.getRemoteAddr());
   }
 
   @PostMapping("/orders/{no}/cancel")
@@ -57,7 +59,7 @@ public class OrderController {
 
   @GetMapping("/orders/{no}/payment-status")
   public Object paymentStatus(@PathVariable String no, HttpServletRequest request) {
-    return admin.payStatus(auth.member(request).id(), no);
+    return MemberCommerceView.order(admin.payStatus(auth.member(request).id(), no));
   }
 
   @GetMapping("/orders/{no}/logistics")

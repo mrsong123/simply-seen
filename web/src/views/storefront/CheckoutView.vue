@@ -12,6 +12,7 @@ import { useUiStore } from "@/store/ui";
 import { useCheckoutSubmission } from "@/composables/storefront/useCheckoutSubmission";
 import { useAction } from "@/composables/useAction";
 import { createRequestKey } from "@/utils/idempotency";
+import ResourceState from "@/components/common/ResourceState.vue";
 import AccountHeader from "@/components/storefront/AccountHeader.vue";
 import AddressDialog from "@/components/storefront/AddressDialog.vue";
 const auth = useAuthStore(),
@@ -26,7 +27,8 @@ const addresses = ref<any[]>([]),
   remark = ref(""),
   accepted = ref(false),
   quote = ref<any>(null),
-  addressVisible = ref(false);
+  addressVisible = ref(false),
+  loading = ref(false), loadError = ref(false), quoteError = ref(false);
 const { busy, run } = useAction();
 let requestKey = createRequestKey(),
   sequence = 0,
@@ -42,6 +44,7 @@ async function loadAddresses() {
 async function getQuote() {
   const generation = ++sequence;
   quote.value = null;
+  quoteError.value = false;
   if (!addressId.value || !cart.value.length) return;
   try {
     const result = await orderApi.getQuote({
@@ -50,7 +53,7 @@ async function getQuote() {
       pointsRequested: points.value,
     });
     if (generation === sequence) quote.value = result;
-  } catch {}
+  } catch { if (generation === sequence) quoteError.value = true; }
 }
 watch([addressId, points], () => {
   sequence++;
@@ -62,12 +65,15 @@ onBeforeUnmount(() => {
   sequence++;
   clearTimeout(timer);
 });
-onMounted(() =>
-  run(async () => {
+async function initialize() {
+  loading.value = true; loadError.value = false;
+  try {
     await Promise.all([cartStore.load(), auth.fetchMemberProfile()]);
     await loadAddresses();
-  }),
-);
+  } catch { loadError.value = true; }
+  finally { loading.value = false; }
+}
+onMounted(initialize);
 function openAddress() {
   addressVisible.value = true;
 }
@@ -101,6 +107,7 @@ async function checkout() {
   <AccountHeader title="确认这份美好" />
   <section class="section bag-layout">
     <div>
+      <ResourceState :loading="loading" :error="loadError" @retry="initialize" />
       <div class="panel">
         <div class="panel-title">
           <h3><Icon name="MapPin" /> 送到这里</h3>
@@ -175,6 +182,7 @@ async function checkout() {
           ><strong class="large">¥{{ money(quote.cashDueFen) }}</strong>
         </div></template
       >
+      <p v-else-if="quoteError" class="notice" role="alert">报价暂不可用，请核对库存、积分和地址。<button class="text-link" @click="getQuote">重新获取报价</button></p>
       <p v-else class="muted">请完善地址和积分，获取实时报价。</p>
       <label class="checkbox-label"
         ><input type="checkbox" v-model="accepted" /><span
@@ -185,7 +193,7 @@ async function checkout() {
       ><button
         class="button dark full"
         :disabled="
-          busy || (!createdOrder && (!quote || !accepted || !cart.length))
+          busy || loading || loadError || (!createdOrder && (!quote || !accepted || !cart.length))
         "
         @click="checkout"
       >

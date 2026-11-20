@@ -25,3 +25,5 @@
 @import "./styles/responsive/common/forms.css";
 @import "./styles/responsive/admin/tables.css";
 @import "./styles/responsive/admin/forms.css";
+
+@import "./styles/storefront/payment.css";

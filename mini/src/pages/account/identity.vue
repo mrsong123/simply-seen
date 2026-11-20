@@ -49,7 +49,7 @@ async function reload() {
   await run(async () => {
     loadError.value = false;
     try {
-      await app.load();
+      await app.load(true);
       setIdentity(await accountApi.identity());
     } catch (error) {
       loadError.value = true;
@@ -142,7 +142,7 @@ async function submit() {
       }}</text>
       <template v-if="identity.status === 'PENDING'">
         <text class="sub"
-          >核验正在处理，请先刷新结果。若超时未完成，可在约2分钟后重新填写同一姓名证件重试；重复提交不会绕过服务端限制。</text
+          >核验正在处理，请先刷新结果。服务端冷却结束后可重新填写同一姓名证件重试；不会自动重复提交付费核验请求。</text
         >
         <button class="secondary" :disabled="busy" @tap="reload">
           刷新认证结果

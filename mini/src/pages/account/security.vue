@@ -20,7 +20,7 @@ async function reload() {
   await run(async () => {
     loadError.value = false;
     try {
-      await Promise.all([app.load(), session.refresh()]);
+      await Promise.all([app.load(true), session.refresh()]);
     } catch (error) {
       loadError.value = true;
       throw error;

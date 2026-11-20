@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
 import ProductCard from "./ProductCard.vue";
+import RecordPager from "./RecordPager.vue";
 import { useCatalog } from "../composables/useCatalog";
 const props = defineProps<{ pointsOnly?: boolean }>();
 defineOptions({ options: { styleIsolation: "apply-shared" } });
@@ -10,6 +11,15 @@ const {
   search,
   category,
   visible,
+  busy,
+  loaded,
+  loadError,
+  total,
+  page,
+  totalPages,
+  loading,
+  next,
+  retry,
   run,
   reload,
   searchProducts,
@@ -54,14 +64,27 @@ defineExpose({ reload });
       ></scroll-view
     ><view class="section-title"
       ><view>日常里的，心动之选</view
-      ><text>{{ visible.length }}件好物</text></view
-    ><view class="products"
+      ><text>共{{ total }}件好物 · 已加载{{ visible.length }}件</text></view
+    ><view v-if="!loaded && !loadError" class="empty">正在读取好物，请稍候</view
+    ><view v-else-if="loadError && !loaded" class="empty">
+      <text>商品暂时无法加载，请检查网络后重试。</text> </view
+    ><view v-else class="products"
       ><ProductCard
         v-for="item in visible"
         :key="item.id"
         :product="item" /></view
-    ><view v-if="!visible.length" class="empty">暂无符合条件的商品</view
-    ><view class="bottom-note"
+    ><view v-if="loaded && !loadError && !visible.length" class="empty"
+      >暂无符合条件的商品</view
+    ><RecordPager
+      :page="page"
+      :total="total"
+      :total-pages="totalPages"
+      :loading="loading"
+      :failed="loadError"
+      @more="run(next)"
+      @retry="run(retry)"
+    />
+    <view class="bottom-note"
       >LESS, BUT BETTER.<text>让好物回归日常，让生活简单而丰盈。</text></view
     ></view
   >

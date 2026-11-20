@@ -97,7 +97,7 @@ test("customer purchase, payment, fulfillment, refund and administration", async
   );
   await admin.goto("/admin/products");
   const download = admin.waitForEvent("download");
-  await admin.getByRole("button", { name: "导出记录" }).click();
+  await admin.getByRole("button", { name: "导出当前页" }).click();
   expect((await download).suggestedFilename()).toContain("商品管理");
   expect(errors).toEqual([]);
 });

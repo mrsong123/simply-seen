@@ -56,15 +56,16 @@ public class BenefitsServiceImpl implements BenefitsService {
               margin * n(rule, "marginSharePercent") / 100);
     }
     com.sujian.mall.common.Rows.required(systemGuardMapper.findForCommission());
-    long monthStart =
-        java.time.Instant.ofEpochMilli(n(o, "paid_at"))
-            .atZone(java.time.ZoneId.of("Asia/Shanghai"))
-            .withDayOfMonth(1)
-            .toLocalDate()
-            .atStartOfDay(java.time.ZoneId.of("Asia/Shanghai"))
-            .toInstant()
-            .toEpochMilli();
-    long used = commissionMapper.countForCommission2(monthStart);
+    ZoneId budgetZone = ZoneId.of("Asia/Shanghai");
+    YearMonth paidMonth = YearMonth.from(Instant.ofEpochMilli(n(o, "paid_at")).atZone(budgetZone));
+    long paidMonthStart = paidMonth.atDay(1).atStartOfDay(budgetZone).toInstant().toEpochMilli();
+    long nextPaidMonthStart =
+        paidMonth.plusMonths(1).atDay(1).atStartOfDay(budgetZone).toInstant().toEpochMilli();
+    // A locking read sees the latest committed allocations even when an enclosing
+    // MySQL REPEATABLE_READ transaction established its snapshot before the guard.
+    long used =
+        commissionMapper.listOriginalAmountsForPaidMonthBudget(paidMonthStart, nextPaidMonthStart)
+            .stream().mapToLong(Long::longValue).sum();
     pool = Math.min(pool, Math.max(0, n(rule, "commissionBudgetFen") - used));
     long base = Math.max(0, n(o, "cash_due") - n(o, "freight"));
     long first = base * n(rule, "level1Bps") / 10000,

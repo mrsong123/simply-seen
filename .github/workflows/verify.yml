@@ -26,15 +26,26 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
       - run: ./mvnw -B clean verify
+        env:
+          APP_CONFIG_FILE: ""
       - run: ./mvnw -f server/pom.xml -B test
         env:
+          APP_CONFIG_FILE: ""
           TEST_DATABASE_URL: jdbc:mysql://127.0.0.1:3306/sujian_test?sslMode=DISABLED&allowPublicKeyRetrieval=true
           DATABASE_USER: sujian
           DATABASE_PASSWORD: ci-test-password
+      - name: Configuration and operational runner regression
+        run: python3 -m unittest discover -s scripts/tests -v
+      - name: API contract covers every implemented route
+        run: |
+          python3 scripts/generate-contract.py
+          git diff --exit-code -- docs/openapi.json server/src/main/resources/static/openapi.json
       - run: npm ci --prefix web && npm run test --prefix web && npm run build --prefix web
       - run: npm ci --prefix mini && cp mini/.env.example mini/.env.local && npm run test --prefix mini && npm run typecheck --prefix mini && npm run build:mp-weixin --prefix mini
       - name: Clean local startup and real HTTP smoke
-        run: python3 scripts/smoke-local.py
+        run: |
+          python3 scripts/smoke-local.py
+          python3 scripts/smoke-configured.py
       - name: Browser acceptance
         run: |
           python3 scripts/dev-env.py
@@ -69,3 +80,7 @@ jobs:
           cache: maven
       - name: Verify Windows Maven entry point
         run: .\mvnw.cmd -B clean verify
+        env:
+          APP_CONFIG_FILE: ""
+      - name: Verify Windows configuration runner
+        run: python -m unittest discover -s scripts/tests -v

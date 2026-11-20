@@ -1,127 +1,99 @@
-# 环境变量清单
+# 配置清单与自动读取
 
-外部服务基址、回调地址、前端API入口和素材域名均从环境变量读取；内部业务路由在OpenAPI中定义。密钥只配置在服务端环境或只读文件，不能以`VITE_`前缀传入前端。仓库的`.env.example`只列名称与非秘密示例，不包含真实凭据。
+项目使用一份根配置文件。复制`.env.example`为`.env`，填写真实参数并放好密钥文件，然后执行`python3 scripts/manage.py check`及`python3 scripts/manage.py up`。Windows可用`py -3`替代`python3`。构建、前端API、小程序AppID、回调地址、Docker挂载由同一入口处理，不需要修改Java、Vue、Nginx或Compose源码。
 
-## 服务端（部署环境变量或显式加载根目录.env）
+## 读取规则
 
-IDE直接运行使用Spring的local默认配置和Run Configuration环境变量；不会自动执行根.env。`scripts/run-server.sh`会显式加载根.env。生产模板的prod配置不能当作本地开箱配置。
+1. `manage.py --config 路径`或进程/启动参数`APP_CONFIG_FILE`显式选择文件；未指定时，管理脚本读取仓库根`.env`，Java读取工作目录`.env`，在`server`目录启动时也会发现父级项目根`.env`。
+2. 命令行和进程环境覆盖文件值。变量及密钥的相对路径相对于实际配置文件目录；没有配置文件时，Java使用工作目录，管理脚本使用仓库根。`.env`按UTF-8数据读取，支持BOM、CRLF、中文、引号、多行和JSON，不执行shell、反引号、`$()`或变量插值。
+3. 配置项可使用`变量名_FILE`读取UTF-8文件，例如`SMS_ACCESS_KEY_SECRET_FILE=./secrets/sms-secret.txt`。单个文件不超过64KiB，允许末尾一个换行；其他空格保留。同一来源的非空直接值优先，较高来源的显式空值不会读取较低来源的密钥文件。
+4. `APP_CONFIG_FILE=`作为**进程环境中的显式空值**会禁用自动文件发现。构建/测试入口自动设置它并隔离真实商户、数据库和短信凭据。它不是`.env`文件内的递归导入指令。`RESTORE_FILE`是备份路径，不按密钥间接引用处理。
+5. Java在决定Spring profile、建立数据源前读取配置；直接IDE/Maven/JAR启动同样适用。无`.env`时仍为local演示环境，无需商户参数。生产使用`prod`且`APP_DEV_MODE=false`，错误配置启动拒绝，开发短信/实名/付款不能成为生产凭证。
 
-| 变量 | 用途与要求 |
+不要复制真实配置或密钥到Git、前端`VITE_*`、镜像或聊天中。管理脚本把所需微信文件复制到权限受控的`.tools/deploy`并只读挂载；运行Compose文件只保存变量引用，不写入实际密钥。应用数据、原配置、备份和`.tools`均不进入构建上下文。
+
+## 首次生产部署需要填写的内容
+
+| 组 | 手动填写/提供 |
 |---|---|
-| SPRING_PROFILES_ACTIVE | 默认local供本地开发；生产明确设prod。IDE直接启动不自动读取根.env |
-| APP_DEV_MODE | local默认true；生产必须false。prod profile强制禁止模拟能力，并校验真实数据库/渠道配置 |
-| PORT | API监听端口，默认8080 |
-| DATABASE_URL | JDBC连接。生产必须jdbc:mysql；建议sslMode=VERIFY_IDENTITY并配置受信CA，Compose自签名内网可先使用REQUIRED并在生产替换为校验身份的证书配置 |
-| DATABASE_USER / DATABASE_PASSWORD | 数据库最小权限账号与凭据。迁移账号需DDL，运行权限可按运维策略分离 |
-| ADMIN_BOOTSTRAP_USER / ADMIN_BOOTSTRAP_PASSWORD | 首次启动创建管理员。local未配置时生成强随机私有文件；生产首启必须提供至少12位口令。已有管理员后不重置密码 |
-| APP_BOOTSTRAP_CREDENTIALS_PATH | local初始凭据文件路径，默认启动工作目录data/bootstrap-admin.txt；日志提示绝对路径，不打印口令，不能把该文件提交Git |
-| SESSION_HOURS | 登录会话有效小时，默认168 |
-| ORDER_EXPIRE_MINUTES | 未支付订单有效分钟，默认15；超时不能跳过渠道确认 |
-| JOB_INTERVAL_MS | Outbox轮询间隔，默认10000毫秒 |
-| MAINTENANCE_INTERVAL_MS | 订单超时及佣金结算轮询，默认60000毫秒 |
-| JOB_INITIAL_DELAY_MS | 启动后任务初次延迟，默认10000毫秒 |
-| API_DOCS_ENABLED | 开发可true，生产建议false，控制动态OpenAPI和Swagger入口 |
-| CORS_ORIGINS | 逗号分隔的可信网页Origin；同域反向代理无需填写，不使用通配符 |
-| SUPPORT_CONTACT | 真实客服联系方式，生产必填 |
-| PRIVACY_CONTACT | 个人信息权利请求联系方式，生产必填 |
-| PUBLIC_STORE_URL | 公开商城HTTPS地址，生成分享链接，生产必填 |
-| DISTRIBUTION_ENABLED | 环境层允许发布分销规则，默认false。已有订单快照与承诺不会因该开关自动作废 |
-| MONTHLY_ENABLED | 月度候选及复核开关，默认false |
-| TRANSFER_ENABLED | 提现和真实转账开关，默认false |
-| WITHDRAW_MIN_FEN / WITHDRAW_MAX_FEN | 单次税前提现范围，默认1000至200000分。最大额必须符合实际开通的转账场景条件 |
-| JAVA_OPTS | 本地运行脚本的JVM参数，例如内存、受信证书库；不能将密钥值放到命令行参数 |
+| 站点 | `PUBLIC_STORE_URL`、`SUPPORT_CONTACT`、`PRIVACY_CONTACT`；自动HTTPS填写`ACME_EMAIL` |
+| 内置数据库 | `MYSQL_PASSWORD`、`MYSQL_ROOT_PASSWORD`；库名/账号已有非秘密默认值 |
+| 管理员 | `ADMIN_BOOTSTRAP_PASSWORD`至少12位独立随机口令，账号默认admin |
+| 微信 | `WX_APP_ID`、`WX_APP_SECRET`、`WX_MCH_ID`、`WX_MERCHANT_SERIAL`、`WX_PLATFORM_SERIAL`、32字节`WX_API_V3_KEY`及商户私钥、平台公钥/证书文件 |
+| 短信 | `SMS_ACCESS_KEY_ID`、`SMS_ACCESS_KEY_SECRET`、已审核`SMS_SIGN_NAME`、验证码`SMS_TEMPLATE_CODE`（模板变量名code） |
+| 实名 | `IDENTITY_ACCESS_KEY_ID`、`IDENTITY_ACCESS_KEY_SECRET`；开通Id2MetaVerify二要素核验产品 |
+| 数据保护 | `ACCOUNT_DATA_KEY`：安全随机32字节的Base64编码，长期稳定并独立备份 |
 
-## 手机验证码登录与姓名/身份证核验
+外部服务的产品权限、短信签名/模板及域名备案/合法域名属于服务商配置。正确填写变量不能替代服务商开通、微信审核或真实小额联调。网站初始没有真实商品，需要在后台录入商品与库存；这属于日常经营数据，不需要改代码。
 
-网页与小程序均支持中国大陆手机号验证码登录，首次验证成功自动注册。已有微信会员应先通过微信登录并绑定手机号，随后可使用该号码登录原账户；系统不会合并两个已有账户的订单、资金和邀请关系。
+首次生成ACCOUNT_DATA_KEY可执行`python3 -c "import base64,secrets; print(base64.b64encode(secrets.token_bytes(32)).decode())"`，把结果仅存入受控配置或密钥文件，不要在重启或恢复时重新生成。
 
-| 变量 | 用途与要求 |
+## 自动派生与部署方式
+
+| 变量 | 默认与作用 |
 |---|---|
-| SMS_PROVIDER | 生产为aliyun；local未配置时为development，返回明确标记的本次随机测试码，生产不能使用该模式 |
-| SMS_API_URL | 阿里云短信RPC HTTPS端点，示例`https://dysmsapi.aliyuncs.com/`，不带查询参数或密钥 |
-| SMS_ACCESS_KEY_ID / SMS_ACCESS_KEY_SECRET | 有SendSms权限的阿里云RAM凭据，仅服务端使用 |
-| SMS_REGION_ID | API区域参数，示例cn-hangzhou，显式填写 |
-| SMS_SIGN_NAME | 已审核的短信签名 |
-| SMS_TEMPLATE_CODE | 已审核的验证码模板，模板变量使用code |
-| SMS_DAILY_LIMIT | 系统每日短信预算上限，默认1000条，必须为正整数；手机及IP限制另行生效 |
-| IDENTITY_PROVIDER | 生产为aliyun；local默认development，仅模拟信息核验，不能作为生产实名结果 |
-| IDENTITY_API_URL | 阿里云实名认证RPC HTTPS端点，示例`https://cloudauth.aliyuncs.com/` |
-| IDENTITY_ACCESS_KEY_ID / IDENTITY_ACCESS_KEY_SECRET | 已开通Id2MetaVerify产品及其权限的RAM凭据 |
-| IDENTITY_REGION_ID | API区域参数，示例cn-hangzhou，显式填写 |
-| IDENTITY_MAX_ATTEMPTS_PER_DAY | 每会员每天最大核验次数，默认5，上限10，重复查询同一次处理中请求不重复调用渠道 |
-| IDENTITY_PENDING_TTL_SECONDS | 处理中请求租约，默认120秒，范围60至600秒；超时保留未知事实，再显式重试 |
-| IDENTITY_RETRY_AFTER_SECONDS | 失败后再次核验的冷却，默认60秒，范围30至300秒 |
-| ACCOUNT_DATA_KEY | Base64编码的32字节安全随机密钥，用于AES-256-GCM加密及独立上下文HMAC指纹；生产必填，不能下发前端 |
-| ACCOUNT_DATA_KEY_PATH | local未配置密钥时生成并复用的私有文件，默认data/account-data.key；生产不自动生成密钥 |
-| IDENTITY_REQUIRED_FOR_WITHDRAWAL | 默认true；生产始终强制实名，不能通过false绕过。false仅供隔离开发及历史财务回归测试 |
+| `PUBLIC_API_URL` | 留空为`PUBLIC_STORE_URL/api/v1` |
+| `PUBLIC_ASSET_URL` | 留空为`PUBLIC_STORE_URL`；小程序素材与远程商品图片域名加入微信白名单 |
+| `WX_PAY_NOTIFY_URL` / `WX_REFUND_NOTIFY_URL` / `WX_TRANSFER_NOTIFY_URL` | 留空分别派生为`PUBLIC_API_URL/callbacks/wechat/pay`、`refund`、`transfer`；也可显式覆盖 |
+| `DATABASE_MODE` | embedded使用项目MySQL8.4；external接已有MySQL |
+| `MYSQL_DATABASE` / `MYSQL_USER` | 内置库与应用账号默认sujian |
+| `DATABASE_URL` / `DATABASE_USER` / `DATABASE_PASSWORD` | embedded留空由MYSQL变量派生；external必须填写实际JDBC URL及账号。URL不内嵌账号密码 |
+| `DATABASE_CA_PATH` | 可选私有数据库CA PEM/证书链；仅MySQL数据源加载为独立信任库，不影响微信/短信HTTPS信任。设置后sslMode需VERIFY_CA或VERIFY_IDENTITY，推荐后者 |
+| `DATABASE_CLIENT_NETWORK` | 外部数据库备份客户端使用的Docker网络，默认本项目网络；通常留空 |
+| `HTTPS_MODE` | caddy自动申请/续签HTTPS；certificate读取已有证书；external使用已有HTTPS代理 |
+| `ACME_EMAIL` | 自动证书续签通知邮箱；域名DNS应先指向服务器并开放80/443 |
+| `TLS_CERT_PATH` / `TLS_KEY_PATH` | certificate模式的有效站点证书链与私钥，只读挂载给HTTPS入口 |
+| `PORT` | Java监听端口默认8080；镜像、健康检查和默认代理自动使用该值 |
+| `API_UPSTREAM_URL` | 留空为`http://server:PORT`；不含路径、查询或凭据，不能以/结尾 |
+| `WEB_BIND` | 网页内部代理绑定，默认127.0.0.1:8088；external代理转发到此处 |
+| `HTTP_BIND` / `HTTPS_BIND` | 内置HTTPS入口主机绑定，默认0.0.0.0:80和0.0.0.0:443 |
+| `APP_NETWORK_CIDR` | 专用Docker私有IPv4网段，默认172.30.10.0/24；冲突时改这一项，无需编辑Compose |
+| `TRUSTED_PROXY_CIDR` | 留空信任上述专用网段；external模式按实际代理来源设置。禁止0.0.0.0/0及::/0，避免伪造来源绕过短信IP限制 |
+| `COMPOSE_PROJECT_NAME` | 默认simply-seen，决定容器/数据卷归属；已有生产数据后不要随意改名 |
+| `CORS_ORIGINS` | 同域留空；跨域填逗号分隔的可信网页Origin，不使用通配符 |
 
-短信验证码有效期300秒，重发冷却60秒，最多5次错误；消费后不能再次使用。手机每小时最多5条、每日10条；IP每分钟最多3条、每小时20条，并受系统日预算限制。验证码只保存带密钥的摘要，不记录到日志；本地开发码仅通过development响应下发并明确显示，生产拒绝消费开发模式生成的验证码。
+`manage.py build/up`从这些值构建网页及小程序：网页同域`/api/v1`，小程序使用`PUBLIC_API_URL`、`PUBLIC_ASSET_URL`、`WX_APP_ID`。旧的`web/.env.local`或`mini/.env.local`不会覆盖本次管理入口传入的构建参数。直接单独运行npm仍可按各客户端README配置本地开发文件。
 
-真实姓名及身份证号在服务端加密保存，客户端只读取脱敏信息和状态。实名认证使用姓名和18位大陆居民身份证二要素匹配，需要用户明确同意；不包含人脸活体核验，也不能由此证明微信收款人与填写的身份证是同一个人。只有渠道明确匹配才通过，超时或异常不能作为通过依据。开发模拟结果不能用于生产提现；生产提现还要求绑定真实微信身份。
-
-`ACCOUNT_DATA_KEY`必须在重启、扩容和恢复时保持一致，并与数据库备份分开安全保存。丢失或直接更换它会导致历史密文无法解密、手机号及证件指纹无法匹配；更换需先制定受控数据迁移方案，不能每次部署生成新值。不要在聊天、截图、日志或Git中提供凭据及实际姓名/证件资料。
-
-## 微信登录、支付与商家转账
+## 微信支付、转账与物流
 
 | 变量 | 配置内容 |
 |---|---|
-| WX_APP_ID / WX_APP_SECRET | 小程序身份及服务端密钥，生产必填。AppSecret不下发客户端 |
-| WX_LOGIN_URL | 微信code换身份完整HTTPS端点；示例为`https://api.weixin.qq.com/sns/jscode2session` |
-| WX_MCH_ID | 商户号，与小程序关联并已开通所用产品 |
-| WX_MERCHANT_SERIAL | 商户API证书序列号，用于请求签名 |
-| WX_PRIVATE_KEY_PATH | PKCS#8 PEM商户RSA私钥绝对路径，只读挂载 |
-| WX_PLATFORM_SERIAL | 微信平台公钥ID/序列号，必须与响应头完全一致；部署方维护轮换 |
-| WX_PLATFORM_PUBLIC_KEY_PATH | X.509 SubjectPublicKeyInfo PEM平台RSA公钥路径，不是商户公钥，不是私钥 |
-| WX_API_V3_KEY | 32字节APIv3密钥，仅服务端解密回调 |
-| WX_PAY_BASE_URL | 支付v3 HTTPS基址，示例`https://api.mch.weixin.qq.com`，不带尾斜杠 |
-| WX_PAY_NOTIFY_URL | 公网HTTPS完整地址，路径`/api/v1/callbacks/wechat/pay` |
-| WX_REFUND_NOTIFY_URL | 公网HTTPS完整地址，路径`/api/v1/callbacks/wechat/refund` |
-| WX_TRANSFER_BASE_URL | 商家转账v3 HTTPS基址，与实际产品匹配 |
-| WX_TRANSFER_NOTIFY_URL | 公网HTTPS完整地址，路径`/api/v1/callbacks/wechat/transfer` |
-| WX_TRANSFER_SCENE_ID | 已开通的真实转账场景ID，按商户实际权限填写，不能猜测 |
-| WX_TRANSFER_PERCEPTION | 对应场景允许的收款感知文案 |
-| WX_TRANSFER_REPORT_INFOS | 该场景要求的JSON数组，如键名`info_type`、`info_content`。实际内容按商户场景要求填写；不是任意通用示例 |
+| `WX_LOGIN_URL` | 已预填官方code换身份端点；AppSecret仅服务端使用 |
+| `WX_PRIVATE_KEY_PATH` | 默认`./secrets/wechat/merchant-private.pem`；2048位以上RSA PKCS#8/PKCS#1私钥 |
+| `WX_PLATFORM_PUBLIC_KEY_PATH` | 默认`./secrets/wechat/platform-public.pem`；对应平台RSA公钥或有效X509证书 |
+| `WX_MERCHANT_SERIAL` / `WX_PLATFORM_SERIAL` | 分别对应商户签名凭据及平台公钥/证书ID，不可混用；平台轮换时同步配置和文件 |
+| `WX_PAY_BASE_URL` / `WX_TRANSFER_BASE_URL` | 已预填官方HTTPS基址；无尾斜线 |
+| `WX_WEB_PAYMENT_MODE` | native默认网页扫码；h5在移动网页使用微信H5，桌面仍可扫码。商户需开通所选产品 |
+| `WX_NATIVE_APP_ID` / `WX_H5_APP_ID` | 可选网页支付产品AppID，空值回退WX_APP_ID；历史订单保存其支付AppID快照 |
+| `WX_H5_APP_NAME` / `WX_H5_ALLOWED_HOSTS` | H5网站名称默认素见好物；允许跳转域名默认wx.tenpay.com |
+| `WX_TRANSFER_SCENE_ID` / `WX_TRANSFER_PERCEPTION` | 实际开通的转账场景及允许的收款感知文案 |
+| `WX_TRANSFER_REPORT_INFOS` | 该场景实际要求的非空JSON数组，每项含info_type和info_content；支持带空格和中文，无需shell转义 |
+| `LOGISTICS_QUERY_URL` / `LOGISTICS_CUSTOMER` / `LOGISTICS_KEY` | 配置快递100完整HTTPS端点、账户与签名密钥 |
+| `LOGISTICS_CARRIER_CODES` | 后台物流名称到服务商编码的非空JSON对象；未配置时仅展示真实录入运单，不伪造轨迹 |
 
-转账使用微信`/v3/fund-app/mch-transfer/transfer-bills`产品接口；支持WAIT_USER_CONFIRM时原生确认收款。当前实现按无需加密收款人姓名的额度/场景使用，默认单笔不超过2000元；若商户产品要求额外实名字段，必须先按实际渠道契约扩展并联调，不应通过抬高最大额绕过该要求。税务申报由商户实际税务流程完成，本系统保留经财务核实的税款及审计事实。
+网页Native/H5不要求先绑定小程序微信。小程序JSAPI及真实提现需要绑定真实微信；提现同时检查真实二要素认证。转账真实姓名只在服务端读取并按平台公钥加密，创建/查询/通知按各自契约核验，确认收款包不会被不含该字段的查询覆盖。
 
-## 网页（web/.env.local，构建时读取）
+## 手机、实名与业务开关
 
 | 变量 | 内容 |
 |---|---|
-| VITE_API_BASE_URL | 必填。API完整基址或同域`/api/v1`。不得填密钥 |
-| API_PROXY_TARGET | Vite本地代理的服务端地址，例如`http://127.0.0.1:8080`；仅本地开发使用 |
-| WEB_PORT | 本地Vite端口，默认5173 |
+| `SMS_PROVIDER` / `IDENTITY_PROVIDER` | 生产为aliyun；local未配置默认development且界面明确标记，生产拒绝开发凭证 |
+| `SMS_API_URL` / `IDENTITY_API_URL` | 已预填官方RPC HTTPS端点，不能含查询参数；区域默认模板cn-hangzhou |
+| `SMS_REGION_ID` / `IDENTITY_REGION_ID` | API区域参数，模板已填 |
+| `SMS_DAILY_LIMIT` | 系统每日短信预算，默认1000，范围1至1000000 |
+| `IDENTITY_MAX_ATTEMPTS_PER_DAY` | 每会员每天核验上限，默认5，最多10 |
+| `IDENTITY_PENDING_TTL_SECONDS` | 处理中租约默认120秒，限制60至600秒 |
+| `IDENTITY_RETRY_AFTER_SECONDS` | 失败冷却默认60秒，限制30至300秒 |
+| `IDENTITY_REQUIRED_FOR_WITHDRAWAL` | 默认true；生产不可通过false绕过 |
+| `DISTRIBUTION_ENABLED` / `MONTHLY_ENABLED` / `TRANSFER_ENABLED` | 分销、月度活动、提现/真实转账开关。启用前配置预算、场景和相应后台审批 |
+| `WITHDRAW_MIN_FEN` / `WITHDRAW_MAX_FEN` | 税前提现范围，默认1000至200000分，最大支持2000元并受实际商户权限限制 |
 
-生产网页支持公开浏览及手机验证码登录。当前支付渠道为微信小程序支付，手机账户应在小程序以同一手机号登录并绑定微信，再完成支付/提现；网页不会伪造可用的微信JSAPI能力。已有微信用户先在原微信账户绑定手机号，避免重复创建账户。管理后台继续使用独立账号和密码。
+验证码有效300秒，冷却60秒，5次错误锁定，单次使用；手机每小时5条/每天10条、IP每分钟3条/每小时20条，并受系统预算限制。认证结果仅表示姓名与身份证信息匹配，不包含人脸活体；错误、未知或超时不会通过。`ACCOUNT_DATA_KEY`更换需要受控迁移和重建指纹，不能通过简单改变量轮换。
 
-## 小程序（mini/.env.local，构建时读取）
+## 其它运行与维护变量
 
-| 变量 | 内容 |
-|---|---|
-| VITE_API_BASE_URL | 必填，真实HTTPS API基址，含`/api/v1`，加入微信request合法域名 |
-| VITE_ASSET_BASE_URL | 必填，素材HTTPS基址，承载`/art/*.png`，加入downloadFile合法域名；远程商品图片也需合法域名 |
-| WX_APP_ID | 必填，构建时写入产物project.config.json；源manifest在构建结束恢复 |
+`SESSION_HOURS`默认168；`ORDER_EXPIRE_MINUTES`默认15；`JOB_INTERVAL_MS`默认10000；`MAINTENANCE_INTERVAL_MS`默认60000；`JOB_INITIAL_DELAY_MS`默认10000；`API_DOCS_ENABLED`生产默认false。本地初始管理员文件可用`APP_BOOTSTRAP_CREDENTIALS_PATH`配置；本地账户密钥文件可用`ACCOUNT_DATA_KEY_PATH`配置，均默认在配置目录data下，仅开发时自动生成。
 
-小程序微信隐私后台需要声明微信身份标识、收货信息等实际处理范围。地址导入为用户主动操作，不要求定位权限。生产构建需换成真实AppID，`.env.example`中的格式示例不代表可提审账号。
+`JAVA_HOME`优先选择Java；构建要求完整JDK21、Node22.12+、Python3.11+和Docker Compose2.24+。`SUJIAN_TOOLS_DIR`、`MAVEN_SETTINGS`为可选构建缓存/设置；Maven不存在时下载固定版本并校验SHA-512。`JAVA_OPTS_JSON`用于单独运行JAR的非敏感JVM参数数组，`JDK_JAVA_OPTIONS`用于容器非敏感参数，不能放业务密钥。`BACKUP_DIR`为备份路径，恢复使用`--file`/`RESTORE_FILE`并显式`--confirm`。
 
-## Docker与运维
-
-| 变量 | 内容 |
-|---|---|
-| MYSQL_ROOT_PASSWORD | MySQL初始化root凭据，强随机，仅数据库管理员持有 |
-| MYSQL_DATABASE / MYSQL_USER / MYSQL_PASSWORD | 初始化库及应用账号，需与JDBC配置一致 |
-| WEB_BIND | 反向代理绑定，例如`127.0.0.1:8088`，避免绕过外层HTTPS入口 |
-| API_UPSTREAM_URL | Nginx到服务端的内部基址，例如`http://server:8080` |
-| TRUSTED_PROXY_CIDR | Nginx可采信客户端IP的外层代理来源CIDR，默认127.0.0.1/32；按实际边缘代理地址填写，不可用0.0.0.0/0。Nginx重写X-Forwarded-For并清除客户端Forwarded，避免伪造来源绕过短信限流 |
-| BACKUP_DIR | 备份脚本输出目录，应为受控加密挂载 |
-| RESTORE_FILE / RESTORE_CONFIRMED | 恢复文件及人工确认标记YES；仅恢复脚本读取 |
-| SUJIAN_TOOLS_DIR | Maven wrapper缓存目录，可选，默认项目.tools |
-| E2E_ADMIN_CREDENTIALS_PATH | 浏览器验收读取本地初始凭据文件的路径，仅测试进程使用，不下发前端 |
-| E2E_ADMIN_USERNAME / E2E_ADMIN_PASSWORD | 浏览器验收可显式提供管理账号，优先于本地文件；不要写入测试报告或Git |
-| TEST_DATABASE_URL | 集成测试目标；只允许专用可清空测试库，测试会删除业务表内数据 |
-
-网络目标：包管理源、微信登录域名、商户支付域名、短信与实名认证端点，以及自有API与素材域名。已有环境只放行包管理源时，应在环境设置添加`api.weixin.qq.com`、`api.mch.weixin.qq.com`、`dysmsapi.aliyuncs.com`、`cloudauth.aliyuncs.com`及实际自有域名。配置文件保存不会证明这些域名已被当前运行实例放行。
-
-## 物流轨迹（快递100实时查询协议）
-
-`LOGISTICS_QUERY_URL`为完整HTTPS查询端点，官方协议示例为`https://poll.kuaidi100.com/poll/query.do`；`LOGISTICS_CUSTOMER`、`LOGISTICS_KEY`为服务商账户与签名密钥。`LOGISTICS_CARRIER_CODES`为后台发货名称到服务商编码的JSON映射，例如`{"顺丰速运":"shunfeng","顺丰":"shunfeng","中通快递":"zhongtong"}`。实际编码和权限按服务商账号确认。服务端按该协议计算参数签名，收货电话仅发送给实际履约轨迹服务，响应只下发时间与轨迹文本。未配置时仅展示已录入运单，不伪造轨迹；配置后小程序和商城订单详情提供实际查询。网络需放行实际物流端点域名。
+网络需允许实际包管理源、微信登录/支付域名、短信/实名域名、物流端点及自有API/素材；Caddy自动HTTPS还需访问ACME服务。配置保存或语法检查不等于这些网络目标已经可达。真实渠道验收、证书签发、微信发布及税务申报需按实际平台流程完成。

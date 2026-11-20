@@ -43,7 +43,7 @@ public class MemberController {
 
   @GetMapping("/me/team")
   public Object team(HttpServletRequest request) {
-    return admin.team(auth.member(request).id());
+    return MemberCommerceView.team(admin.team(auth.member(request).id()));
   }
 
   @GetMapping("/me/withdrawals")

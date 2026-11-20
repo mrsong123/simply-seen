@@ -21,6 +21,8 @@ public class RefundSettlementServiceImpl implements RefundSettlementService {
   @org.springframework.beans.factory.annotation.Autowired private ShopOrderMapper shopOrderMapper;
   @org.springframework.beans.factory.annotation.Autowired private SkuMapper skuMapper;
 
+  @org.springframework.beans.factory.annotation.Autowired private SystemGuardMapper guards;
+
   private final BusinessSupport d;
   private final CommerceService shop;
 
@@ -32,13 +34,20 @@ public class RefundSettlementServiceImpl implements RefundSettlementService {
   @Transactional
   public void refundSuccess(String id, String channelId) {
     var r = com.sujian.mall.common.Rows.required(refundMapper.findForReviewRefund(id));
-    if (s(r, "state").equals("SUCCESS")) return;
+    Problem.require(channelId != null && !channelId.isBlank(), "REFUND_EVIDENCE", "缺少可信退款交易单号");
+    if (s(r, "state").equals("SUCCESS")) {
+      Problem.require(s(r, "channel_id").equals(channelId), "REFUND_CONFLICT", "重复退款通知的渠道交易单号不一致");
+      return;
+    }
     Problem.require(
         List.of("REVIEWED", "PROCESSING", "ABNORMAL").contains(s(r, "state")),
         "REFUND_STATE",
         "退款单尚未审核");
     String no = s(r, "order_id");
     var o = com.sujian.mall.common.Rows.required(shopOrderMapper.lockOrderByNo(no));
+    com.sujian.mall.common.Rows.required(guards.findForApproveRule());
+    String month = Instant.ofEpochMilli(n(o, "paid_at")).atZone(ZoneId.of("Asia/Shanghai")).toString().substring(0, 7);
+    var monthlySettlements = settlementMapper.listForRefundSuccess(month);
     shop.benefits(no);
     long uid = n(r, "member_id");
     com.sujian.mall.common.Rows.required(memberMapper.lockMemberId(uid));
@@ -106,12 +115,7 @@ public class RefundSettlementServiceImpl implements RefundSettlementService {
     shopOrderMapper.recordRefundTotals(
         refundCash, refundPoints, full ? "REFUNDED" : s(o, "state"), no);
     refundMapper.updateForRefundSuccess(channelId, id);
-    String month =
-        Instant.ofEpochMilli(n(o, "paid_at"))
-            .atZone(ZoneId.of("Asia/Shanghai"))
-            .toString()
-            .substring(0, 7);
-    for (var st : settlementMapper.listForRefundSuccess(month)) {
+    for (var st : monthlySettlements) {
       if (s(st, "state").equals("DRAFT")) settlementMapper.updateForRefundSuccess(n(st, "id"));
       else d.issue("MONTHLY_REFUND", id, "已审批活动发生退款，请复核历史结算 " + n(st, "id"));
     }

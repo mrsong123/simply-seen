@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import Icon from "@/components/common/Icon.vue";
 import { money, date, label } from "@/utils/format";
-import { onMounted } from "vue";
+import { onMounted, ref } from "vue";
+import ResourceState from "@/components/common/ResourceState.vue";
 import { storeToRefs } from "pinia";
 import { useCartStore } from "@/store/cart";
 import { useAction } from "@/composables/useAction";
@@ -9,7 +10,13 @@ import AccountHeader from "@/components/storefront/AccountHeader.vue";
 const store = useCartStore();
 const { items: cart, total: cartTotal } = storeToRefs(store);
 const { busy, run } = useAction();
-onMounted(() => store.load().catch(() => {}));
+const loading = ref(false), error = ref(false);
+async function load() {
+  loading.value = true; error.value = false;
+  try { await store.load(); } catch { error.value = true; }
+  finally { loading.value = false; }
+}
+onMounted(load);
 async function changeCart(item: any, delta: number) {
   await run(() => store.change(item.sku_id, item.quantity + delta));
 }
@@ -18,7 +25,8 @@ async function changeCart(item: any, delta: number) {
   <AccountHeader title="我的购物袋" />
   <section class="section bag-layout">
     <div>
-      <div v-if="!cart.length" class="empty-state">
+      <ResourceState :loading="loading" :error="error" @retry="load" />
+      <div v-if="!loading && !error && !cart.length" class="empty-state">
         <Icon name="ShoppingBag" :size="44" />
         <h3>购物袋还很轻盈</h3>
         <p>去挑选一件能陪伴日常的好物吧。</p>
@@ -26,7 +34,7 @@ async function changeCart(item: any, delta: number) {
           >发现好物 <Icon name="ArrowRight" :size="17"
         /></RouterLink>
       </div>
-      <article v-for="item in cart" :key="item.sku_id" class="cart-row">
+      <article v-for="item in (error ? [] : cart)" :key="item.sku_id" class="cart-row">
         <RouterLink
           :to="'/product/' + item.product_id"
           class="cart-image"
@@ -65,7 +73,7 @@ async function changeCart(item: any, delta: number) {
         </button>
       </article>
     </div>
-    <aside v-if="cart.length" class="summary-card">
+    <aside v-if="cart.length && !error" class="summary-card">
       <h3>这份美好</h3>
       <div class="summary-line">
         <span>商品金额</span><strong>¥{{ money(cartTotal) }}</strong>

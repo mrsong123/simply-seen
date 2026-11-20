@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { createPagedResource } from "@/composables/createPagedResource";
+import { onBeforeUnmount, watch } from "vue";
+import PageNavigation from "@/components/common/PageNavigation.vue";
+import ResourceState from "@/components/common/ResourceState.vue";
 import Icon from "@/components/common/Icon.vue";
 import { money, date, label } from "@/utils/format";
 import { ref, computed, onMounted } from "vue";
@@ -16,30 +20,17 @@ const auth = useAuthStore(),
   config = useConfigStore();
 const { categories } = storeToRefs(config);
 const profile = computed(() => auth.memberProfile);
-const products = ref<any[]>([]),
-  loaded = ref(false),
-  search = ref(""),
+const search = ref(""),
   category = ref(""),
   sort = ref("curated"),
   pointsRulesVisible = ref(false);
-const visibleProducts = computed(() => {
-  let rows = [...products.value];
-  if (props.points) rows = rows.filter((x) => x.points_percent > 0);
-  if (sort.value === "priceUp") rows.sort((a, b) => a.price - b.price);
-  if (sort.value === "priceDown") rows.sort((a, b) => b.price - a.price);
-  return rows;
-});
-async function filter() {
-  try {
-    products.value = await catalogApi.getProducts({
-      category: category.value,
-      search: search.value,
-    });
-  } finally {
-    loaded.value = true;
-  }
-}
-onMounted(() => filter().catch(() => {}));
+const records = createPagedResource<any>((query) => catalogApi.getProductsPage({ ...query, search: search.value, categoryId: category.value, points: props.points, sort: sort.value }));
+const { items: visibleProducts, loading, error, loaded } = records;
+async function filter() { records.page.value = 1; await records.load(); }
+onMounted(records.load);
+onBeforeUnmount(records.dispose);
+watch(() => props.points, filter);
+watch(sort, filter);
 </script>
 <template>
   <section class="catalog-heading">
@@ -111,8 +102,9 @@ onMounted(() => filter().catch(() => {}));
         </select>
       </div>
     </div>
-    <div class="result-count">{{ visibleProducts.length }} 件好物</div>
-    <div class="product-grid">
+    <ResourceState :loading="loading" :error="error" @retry="filter" />
+    <div v-if="!error" class="result-count">{{ records.total.value }} 件好物</div>
+    <div v-if="!loading && !error" class="product-grid">
       <RouterLink
         v-for="p in visibleProducts"
         :key="p.id"
@@ -137,7 +129,8 @@ onMounted(() => filter().catch(() => {}));
         </div></RouterLink
       >
     </div>
-    <div v-if="loaded && !visibleProducts.length" class="empty-state">
+    <PageNavigation :records="records" label="商品" />
+    <div v-if="loaded && !error && !loading && !visibleProducts.length" class="empty-state">
       <Icon name="Search" />
       <h3>暂未找到合适的好物</h3>
       <button

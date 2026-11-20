@@ -8,8 +8,9 @@ import AdminPageHeader from "@/components/admin/AdminPageHeader.vue";
 import AdminDataTable from "@/components/admin/AdminDataTable.vue";
 import ConfirmActionDialog from "@/components/admin/ConfirmActionDialog.vue";
 const auth = useAuthStore();
-const { data, loading, load } = useAdminResource<any[]>(() =>
+const { data, loading, error, load } = useAdminResource<any[]>(() =>
   adminApi.getMembers(),
+  "members",
 );
 const rows = computed(() => data.value || []),
   isAdmin = computed(
@@ -33,6 +34,8 @@ function saved() {
     :columns="adminDefinitions.members.columns!"
     title="会员管理"
     :loading="loading"
+    :error="error"
+    @retry="load"
     icon="Users"
     ><template #actions="{ row }"
       ><button v-if="isAdmin" class="text-link" @click="selected = row">

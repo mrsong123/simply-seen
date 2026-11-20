@@ -9,8 +9,9 @@ import AdminDataTable from "@/components/admin/AdminDataTable.vue";
 import FinanceReviewDialog from "@/components/admin/FinanceReviewDialog.vue";
 import OrderDetailDialog from "@/components/admin/OrderDetailDialog.vue";
 const auth = useAuthStore();
-const { data, loading, load } = useAdminResource<any[]>(() =>
+const { data, loading, error, load } = useAdminResource<any[]>(() =>
   adminApi.getRefunds(),
+  "refunds",
 );
 const rows = computed(() => data.value || []),
   canFinance = computed(() =>
@@ -35,6 +36,8 @@ function reviewed() {
     :columns="adminDefinitions.refunds.columns!"
     title="售后退款"
     :loading="loading"
+    :error="error"
+    @retry="load"
     icon="RefreshCw"
     ><template #actions="{ row }"
       ><button class="text-link" @click="orderNo = row.order_id">原订单</button

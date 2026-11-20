@@ -7,6 +7,7 @@ import com.sujian.mall.common.*;
 import com.sujian.mall.config.Settings;
 import com.sujian.mall.job.OutboxJob;
 import com.sujian.mall.service.*;
+import java.time.*;
 import java.util.*;
 import java.util.concurrent.*;
 import org.junit.jupiter.api.*;
@@ -83,6 +84,7 @@ class CommerceTest {
                   "commission",
                   "ledger",
                   "order_item",
+                  "payment_session",
                   "shop_order",
                   "quote",
                   "cart_item",
@@ -248,6 +250,182 @@ class CommerceTest {
     d.exec("UPDATE rule_version SET config=? WHERE state='ACTIVE'", d.encode(rule));
     pay(order(u, 1, 0));
     assertTrue(d.count("SELECT COALESCE(SUM(amount),0) FROM commission") <= 100);
+  }
+
+  long commissionBudgetBuyer(long budget) {
+    long first = member("Budget first promoter", "");
+    auth.promote(first);
+    long second = member("Budget second promoter", s(auth.profile(first), "invite_code"));
+    auth.promote(second);
+    long buyer = member("Budget buyer", s(auth.profile(second), "invite_code"));
+    var rule = shop.rules();
+    rule.put("commissionBudgetFen", budget);
+    d.exec("UPDATE rule_version SET config=? WHERE state='ACTIVE'", d.encode(rule));
+    return buyer;
+  }
+
+  Map<String, Object> paidAt(long buyer, long paidAt) {
+    var paid = order(buyer, 1, 0);
+    shop.paid(s(paid, "id"), "DEV-" + s(paid, "id"), n(paid, "cash_due"));
+    d.exec("UPDATE shop_order SET paid_at=? WHERE id=?", paidAt, s(paid, "id"));
+    return paid;
+  }
+
+  long originalCommission(Map<String, Object> paid) {
+    return d.count(
+        "SELECT COALESCE(SUM(original_amount),0) FROM commission WHERE order_id=?", s(paid, "id"));
+  }
+
+  @Test
+  void delayedCommissionsConsumeTheirOriginalPaidMonthBudgetOnly() {
+    long buyer = commissionBudgetBuyer(1000);
+    ZoneId zone = ZoneId.of("Asia/Shanghai");
+    YearMonth thisMonth = YearMonth.now(zone);
+    long thisMonthStart = thisMonth.atDay(1).atStartOfDay(zone).toInstant().toEpochMilli();
+    long previousMonthStart =
+        thisMonth.minusMonths(1).atDay(1).atStartOfDay(zone).toInstant().toEpochMilli();
+    var delayed = paidAt(buyer, thisMonthStart - 1);
+    shop.benefits(s(delayed, "id"));
+    assertEquals(903, originalCommission(delayed));
+    assertTrue(
+        d.count("SELECT MIN(created_at) FROM commission WHERE order_id=?", s(delayed, "id"))
+            >= thisMonthStart);
+
+    var samePaidMonth = paidAt(buyer, previousMonthStart);
+    shop.benefits(s(samePaidMonth, "id"));
+    assertEquals(97, originalCommission(samePaidMonth));
+    var exhausted = paidAt(buyer, previousMonthStart + 1);
+    shop.benefits(s(exhausted, "id"));
+    assertEquals(0, originalCommission(exhausted));
+
+    var nextPaidMonth = paidAt(buyer, thisMonthStart);
+    shop.benefits(s(nextPaidMonth, "id"));
+    assertEquals(903, originalCommission(nextPaidMonth));
+    shop.benefits(s(delayed, "id"));
+    assertEquals(903, originalCommission(delayed));
+    assertEquals(2, d.count("SELECT COUNT(*) FROM commission WHERE order_id=?", s(delayed, "id")));
+  }
+
+  @Test
+  void commissionBudgetUsesShanghaiStartInclusiveAndNextMonthExclusive() {
+    long buyer = commissionBudgetBuyer(1000);
+    ZoneId zone = ZoneId.of("Asia/Shanghai");
+    YearMonth targetMonth = YearMonth.now(zone).minusMonths(1);
+    long start = targetMonth.atDay(1).atStartOfDay(zone).toInstant().toEpochMilli();
+    long end = targetMonth.plusMonths(1).atDay(1).atStartOfDay(zone).toInstant().toEpochMilli();
+
+    var previousMonth = paidAt(buyer, start - 1);
+    var followingMonth = paidAt(buyer, end);
+    shop.benefits(s(previousMonth, "id"));
+    shop.benefits(s(followingMonth, "id"));
+    assertEquals(903, originalCommission(previousMonth));
+    assertEquals(903, originalCommission(followingMonth));
+
+    var firstMillisecond = paidAt(buyer, start);
+    var lastMillisecond = paidAt(buyer, end - 1);
+    shop.benefits(s(firstMillisecond, "id"));
+    shop.benefits(s(lastMillisecond, "id"));
+    assertEquals(903, originalCommission(firstMillisecond));
+    assertEquals(97, originalCommission(lastMillisecond));
+    assertEquals(
+        1000,
+        d.count(
+            "SELECT COALESCE(SUM(c.original_amount),0) FROM commission c"
+                + " JOIN shop_order o ON o.id=c.order_id WHERE o.paid_at>=? AND o.paid_at<?",
+            start,
+            end));
+  }
+
+  @Test
+  void refundDoesNotReleaseOriginalPaidMonthCommissionBudget() {
+    long buyer = commissionBudgetBuyer(1000);
+    ZoneId zone = ZoneId.of("Asia/Shanghai");
+    long paidMonthStart =
+        YearMonth.now(zone).minusMonths(1).atDay(1).atStartOfDay(zone).toInstant().toEpochMilli();
+    var refunded = paidAt(buyer, paidMonthStart);
+    shop.benefits(s(refunded, "id"));
+    var line = d.one("SELECT * FROM order_item WHERE order_id=?", s(refunded, "id"));
+    var refund =
+        (Map<String, Object>)
+            f.refund(
+                buyer,
+                "refund-monthly-commission-budget",
+                Map.of(
+                    "orderNo", s(refunded, "id"),
+                    "reason", "全额退款验证原月佣金预算占用",
+                    "lines", List.of(Map.of("orderItemId", n(line, "id"), "quantity", 1))));
+    f.reviewRefund(100, s(refund, "id"), true, "");
+    f.refundSuccess(s(refund, "id"), "TEST-BUDGET-REFUND");
+    assertEquals(903, originalCommission(refunded));
+    assertEquals(
+        0, d.count("SELECT SUM(amount) FROM commission WHERE order_id=?", s(refunded, "id")));
+    assertEquals(
+        2,
+        d.count(
+            "SELECT COUNT(*) FROM commission WHERE order_id=? AND state='REVERSED'",
+            s(refunded, "id")));
+
+    var remaining = paidAt(buyer, paidMonthStart + 1);
+    shop.benefits(s(remaining, "id"));
+    assertEquals(97, originalCommission(remaining));
+    var exhausted = paidAt(buyer, paidMonthStart + 2);
+    shop.benefits(s(exhausted, "id"));
+    assertEquals(0, originalCommission(exhausted));
+    assertEquals(1000, d.count("SELECT SUM(original_amount) FROM commission"));
+  }
+
+  @Test
+  void concurrentCommissionsRespectBudgetAfterTransactionsEstablishSnapshots() throws Exception {
+    long buyer = commissionBudgetBuyer(1000);
+    ZoneId zone = ZoneId.of("Asia/Shanghai");
+    long paidMonthStart =
+        YearMonth.now(zone).minusMonths(1).atDay(1).atStartOfDay(zone).toInstant().toEpochMilli();
+    var orders = new ArrayList<Map<String, Object>>();
+    for (int index = 0; index < 4; index++) orders.add(paidAt(buyer, paidMonthStart + index));
+    var snapshotsReady = new CountDownLatch(orders.size());
+    try (var pool = Executors.newFixedThreadPool(orders.size())) {
+      var outcomes = new ArrayList<Future<?>>();
+      for (var paid : orders) {
+        outcomes.add(
+            pool.submit(
+                () -> {
+                  for (int attempt = 0; attempt < 8; attempt++) {
+                    boolean initialAttempt = attempt == 0;
+                    try {
+                      tx.executeWithoutResult(
+                          status -> {
+                            // MySQL's repeatable-read snapshot must precede another
+                            // worker's committed allocation to catch a stale SUM.
+                            d.count("SELECT COUNT(*) FROM commission");
+                            if (initialAttempt) {
+                              snapshotsReady.countDown();
+                              try {
+                                assertTrue(snapshotsReady.await(20, TimeUnit.SECONDS));
+                              } catch (InterruptedException error) {
+                                Thread.currentThread().interrupt();
+                                throw new IllegalStateException(error);
+                              }
+                            }
+                            shop.benefits(s(paid, "id"));
+                          });
+                      return;
+                    } catch (org.springframework.dao.TransientDataAccessException error) {
+                      // The durable outbox also retries a transaction selected as
+                      // a database deadlock victim; no partial award can commit.
+                      if (attempt == 7) throw error;
+                    }
+                  }
+                }));
+      }
+      for (var outcome : outcomes) outcome.get(60, TimeUnit.SECONDS);
+    }
+    assertEquals(1000, d.count("SELECT SUM(original_amount) FROM commission"));
+    assertEquals(1000, d.count("SELECT SUM(amount) FROM commission"));
+    for (var paid : orders) {
+      assertTrue(originalCommission(paid) <= 903);
+      shop.benefits(s(paid, "id"));
+    }
+    assertEquals(1000, d.count("SELECT SUM(original_amount) FROM commission"));
   }
 
   @Test

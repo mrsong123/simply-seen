@@ -104,6 +104,13 @@
         "navigationBarTitleText": "服务规则",
         "enablePullDownRefresh": false
       }
+    },
+    {
+      "path": "pages/account/awards",
+      "style": {
+        "navigationBarTitleText": "月度奖励",
+        "enablePullDownRefresh": true
+      }
     }
   ],
   "globalStyle": {

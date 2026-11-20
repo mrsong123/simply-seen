@@ -523,7 +523,7 @@
                       "type": "string"
                     },
                     "data": {
-                      "$ref": "#/components/schemas/Rule"
+                      "$ref": "#/components/schemas/PublicRule"
                     }
                   },
                   "required": [
@@ -3345,7 +3345,17 @@
             }
           }
         ],
-        "description": "微信原生支付参数。生产缺真实微信绑定时返回WECHAT_BINDING_REQUIRED，且不标记预支付。开发环境返回mode=DEVELOPMENT和orderNo。"
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrepayRequest"
+              }
+            }
+          }
+        },
+        "description": "可选channel为MINI_PROGRAM/NATIVE/H5；无body保持小程序JSAPI。首次预付后通道锁定，原通道可恢复，不允许跨产品重复收费。小程序要求微信绑定；网页扫码/H5不要求绑定。开发环境返回明确DEVELOPMENT。"
       }
     },
     "/orders/{no}/cancel": {
@@ -5006,7 +5016,7 @@
                       "type": "string"
                     },
                     "data": {
-                      "$ref": "#/components/schemas/Order"
+                      "$ref": "#/components/schemas/AdminOrder"
                     }
                   },
                   "required": [
@@ -9023,6 +9033,584 @@
         }
       }
     },
+    "/products/page": {
+      "get": {
+        "operationId": "get_products_page",
+        "tags": [
+          "交易商城"
+        ],
+        "summary": "GET /products/page",
+        "responses": {
+          "200": {
+            "description": "成功；data为业务数据，空操作为null",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "OK"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/RecordPage"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "data",
+                    "requestId"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "字段格式错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "登录失效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "角色权限不足",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "记录不存在或无权访问",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "状态、余额、库存、幂等或规则冲突",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "操作限流",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "配置缺失或渠道结果待确认",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000,
+              "default": 1
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "description": "全量记录的字面搜索，通配符不展开"
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z_]{0,40}$"
+            }
+          },
+          {
+            "name": "asset",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "points",
+                "points_held",
+                "available",
+                "reserved",
+                "debt"
+              ]
+            },
+            "description": "仅ledger资源适用"
+          },
+          {
+            "name": "categoryId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "points",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "curated",
+                "priceUp",
+                "priceDown"
+              ],
+              "default": "curated"
+            }
+          }
+        ]
+      }
+    },
+    "/admin/records/{resource}": {
+      "get": {
+        "operationId": "get_admin_records_resource",
+        "tags": [
+          "管理后台"
+        ],
+        "summary": "GET /admin/records/{resource}",
+        "responses": {
+          "200": {
+            "description": "成功；data为业务数据，空操作为null",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "OK"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/RecordPage"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "data",
+                    "requestId"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "字段格式错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "登录失效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "角色权限不足",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "记录不存在或无权访问",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "状态、余额、库存、幂等或规则冲突",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "操作限流",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "配置缺失或渠道结果待确认",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "resource",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "products",
+                "orders",
+                "refunds",
+                "members",
+                "commissions",
+                "ledger",
+                "withdrawals",
+                "rules",
+                "settlements",
+                "accounts",
+                "audit",
+                "issues",
+                "outbox",
+                "reconcile-batches"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000,
+              "default": 1
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "description": "全量记录的字面搜索，通配符不展开"
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z_]{0,40}$"
+            }
+          },
+          {
+            "name": "asset",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "points",
+                "points_held",
+                "available",
+                "reserved",
+                "debt"
+              ]
+            },
+            "description": "仅ledger资源适用"
+          }
+        ]
+      }
+    },
+    "/me/records/{resource}": {
+      "get": {
+        "operationId": "get_me_records_resource",
+        "tags": [
+          "交易商城"
+        ],
+        "summary": "GET /me/records/{resource}",
+        "responses": {
+          "200": {
+            "description": "成功；data为业务数据，空操作为null",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "OK"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/RecordPage"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "data",
+                    "requestId"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "字段格式错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "登录失效",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "角色权限不足",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "记录不存在或无权访问",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "状态、余额、库存、幂等或规则冲突",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "操作限流",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "配置缺失或渠道结果待确认",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "resource",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "orders",
+                "ledger",
+                "commissions",
+                "withdrawals",
+                "awards",
+                "invites",
+                "second-invites"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000,
+              "default": 1
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "description": "全量记录的字面搜索，通配符不展开"
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z_]{0,40}$"
+            }
+          },
+          {
+            "name": "asset",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "points",
+                "points_held",
+                "available",
+                "reserved",
+                "debt"
+              ]
+            },
+            "description": "仅ledger资源适用"
+          }
+        ]
+      }
+    },
     "/me/identity": {
       "get": {
         "operationId": "get_me_identity",
@@ -9647,6 +10235,9 @@
           },
           "code": {
             "type": "string"
+          },
+          "active": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -9710,6 +10301,12 @@
             "type": "boolean"
           },
           "skus": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Sku"
+            }
+          },
+          "retired_skus": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/Sku"
@@ -9978,15 +10575,6 @@
             "format": "int64",
             "description": "分"
           },
-          "cost": {
-            "type": "integer",
-            "format": "int64",
-            "description": "分"
-          },
-          "commissionPercent": {
-            "type": "integer",
-            "format": "int64"
-          },
           "amount": {
             "type": "integer",
             "format": "int64",
@@ -10015,8 +10603,6 @@
           "image",
           "quantity",
           "unitPrice",
-          "cost",
-          "commissionPercent",
           "amount",
           "maxPoints",
           "points",
@@ -10063,7 +10649,7 @@
             "$ref": "#/components/schemas/Address"
           },
           "rule": {
-            "$ref": "#/components/schemas/Rule"
+            "$ref": "#/components/schemas/PublicRule"
           }
         },
         "required": [
@@ -10237,12 +10823,6 @@
           "payment_state": {
             "type": "string"
           },
-          "address_snapshot": {
-            "type": "string"
-          },
-          "rule_snapshot": {
-            "type": "string"
-          },
           "remark": {
             "type": "string"
           },
@@ -10317,7 +10897,7 @@
           "items": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/OrderItem"
+              "$ref": "#/components/schemas/PublicOrderItem"
             }
           },
           "address": {
@@ -10326,8 +10906,17 @@
           "refunds": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/Refund"
+              "$ref": "#/components/schemas/PublicRefund"
             }
+          },
+          "payment_channel": {
+            "type": "string",
+            "enum": [
+              "UNSELECTED",
+              "MINI_PROGRAM",
+              "NATIVE",
+              "H5"
+            ]
           }
         },
         "required": [
@@ -10867,7 +11456,7 @@
           "commissions": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/Commission"
+              "$ref": "#/components/schemas/PublicCommission"
             }
           }
         },
@@ -10921,6 +11510,13 @@
           },
           "identityRequiredForWithdrawal": {
             "type": "boolean"
+          },
+          "webPaymentMode": {
+            "type": "string",
+            "enum": [
+              "native",
+              "h5"
+            ]
           }
         },
         "required": [
@@ -11814,6 +12410,140 @@
           "payment_state": {
             "type": "string"
           },
+          "remark": {
+            "type": "string"
+          },
+          "transaction_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "carrier": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tracking_no": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "member_id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "item_amount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "freight": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "points_used": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cash_due": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cash_refunded": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "points_refunded": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "expires_at": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "created_at": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "paid_at": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "completed_at": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "payment_channel": {
+            "type": "string",
+            "enum": [
+              "UNSELECTED",
+              "MINI_PROGRAM",
+              "NATIVE",
+              "H5"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "member_id",
+          "state",
+          "payment_state",
+          "cash_due",
+          "created_at"
+        ]
+      },
+      "DevelopmentPrepay": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "const": "DEVELOPMENT"
+          },
+          "orderNo": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "mode",
+          "orderNo"
+        ]
+      },
+      "PrepayResult": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/Prepay"
+          },
+          {
+            "$ref": "#/components/schemas/NativePrepay"
+          },
+          {
+            "$ref": "#/components/schemas/H5Prepay"
+          },
+          {
+            "$ref": "#/components/schemas/DevelopmentPrepay"
+          }
+        ]
+      },
+      "AdminOrder": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "payment_state": {
+            "type": "string"
+          },
           "address_snapshot": {
             "type": "string"
           },
@@ -11890,6 +12620,30 @@
               "null"
             ],
             "format": "int64"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderItem"
+            }
+          },
+          "address": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "refunds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Refund"
+            }
+          },
+          "payment_channel": {
+            "type": "string",
+            "enum": [
+              "UNSELECTED",
+              "MINI_PROGRAM",
+              "NATIVE",
+              "H5"
+            ]
           }
         },
         "required": [
@@ -11898,33 +12652,362 @@
           "state",
           "payment_state",
           "cash_due",
-          "created_at"
+          "items"
         ]
       },
-      "DevelopmentPrepay": {
+      "PublicOrderItem": {
         "type": "object",
         "properties": {
-          "mode": {
-            "type": "string",
-            "const": "DEVELOPMENT"
+          "id": {
+            "type": "integer",
+            "format": "int64"
           },
-          "orderNo": {
+          "sku_id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "product_id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "quantity": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "unit_price": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cash_amount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "points_amount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "refunded_quantity": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "refunded_cash": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "refunded_points": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "order_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "image": {
             "type": "string"
           }
         },
         "required": [
-          "mode",
-          "orderNo"
+          "id",
+          "sku_id",
+          "product_id",
+          "quantity",
+          "unit_price",
+          "cash_amount",
+          "points_amount",
+          "refunded_quantity",
+          "refunded_cash",
+          "refunded_points",
+          "order_id",
+          "name",
+          "image"
         ]
       },
-      "PrepayResult": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/Prepay"
+      "PublicRefund": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
           },
-          {
-            "$ref": "#/components/schemas/DevelopmentPrepay"
+          "order_id": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "channel_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "member_id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "amount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "points": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "creator": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "reviewer": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "created_at": {
+            "type": "integer",
+            "format": "int64"
           }
+        },
+        "required": [
+          "id",
+          "order_id",
+          "state",
+          "reason",
+          "channel_id",
+          "member_id",
+          "amount",
+          "points",
+          "creator",
+          "reviewer",
+          "created_at"
+        ]
+      },
+      "PublicCommission": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "beneficiary_id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "buyer_id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "level_no": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "amount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "original_amount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "settled_at": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "created_at": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "order_id": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "beneficiary_id",
+          "buyer_id",
+          "level_no",
+          "amount",
+          "original_amount",
+          "settled_at",
+          "created_at",
+          "order_id",
+          "state"
+        ]
+      },
+      "PublicRule": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "level1Bps": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "level2Bps": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "settlementDays": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "pointsPer100Yuan": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "freightFen": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "freeShippingFen": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "distributionEnabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "version",
+          "level1Bps",
+          "level2Bps",
+          "settlementDays",
+          "pointsPer100Yuan",
+          "freightFen",
+          "freeShippingFen",
+          "distributionEnabled"
+        ]
+      },
+      "PrepayRequest": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "type": "string",
+            "enum": [
+              "MINI_PROGRAM",
+              "NATIVE",
+              "H5"
+            ],
+            "default": "MINI_PROGRAM"
+          }
+        },
+        "required": []
+      },
+      "NativePrepay": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "const": "NATIVE"
+          },
+          "orderNo": {
+            "type": "string"
+          },
+          "codeUrl": {
+            "type": "string",
+            "description": "微信原生扫码URI，仅用于真实二维码"
+          },
+          "expiresAt": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": [
+          "mode",
+          "orderNo",
+          "codeUrl",
+          "expiresAt"
+        ]
+      },
+      "H5Prepay": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "const": "H5"
+          },
+          "orderNo": {
+            "type": "string"
+          },
+          "h5Url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "expiresAt": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": [
+          "mode",
+          "orderNo",
+          "h5Url",
+          "expiresAt"
+        ]
+      },
+      "RecordPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "按resource返回经过权限及敏感字段过滤的业务投影"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "states": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "summary": {
+            "type": "object",
+            "description": "推广相关会员资源提供账户全量pendingAmount/level1Count/level2Count，不是当前页合计",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "size",
+          "totalPages",
+          "states",
+          "summary"
         ]
       }
     }

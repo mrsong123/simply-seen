@@ -20,6 +20,8 @@ public class AccountAdminOperations {
   @org.springframework.beans.factory.annotation.Autowired
   private SessionTokenMapper sessionTokenMapper;
 
+  @org.springframework.beans.factory.annotation.Autowired private SystemGuardMapper guards;
+
   private final BusinessSupport d;
   private final AuthService auth;
 
@@ -42,6 +44,8 @@ public class AccountAdminOperations {
 
   @Transactional
   public void accountActive(long actor, long id, Map<String, Object> b) {
+    com.sujian.mall.common.Rows.required(guards.lockAdminAccounts());
+    com.sujian.mall.common.Rows.required(adminAccountMapper.findForActor(actor));
     Problem.require(id != actor, "SELF_DISABLE", "不能停用当前登录账号");
     var target = com.sujian.mall.common.Rows.required(adminAccountMapper.findForAccountActive(id));
     boolean enabled = b(b, "active");

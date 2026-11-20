@@ -1,0 +1,32 @@
+Configured production stack acceptance (2026-11-19)
+Entry point: python3 scripts/manage.py up --skip-build --config <isolated fixture>
+Profile: prod; APP_DEV_MODE=false; embedded MySQL 8.4; certificate HTTPS.
+Synthetic credentials and private CA only. No real SMS, identity, WeChat or ACME request.
+Actual initial failure: inherited -Xms128m conflicted with health probe -Xmx32m.
+Fix: server/Dockerfile probe now sets both -Xms8m and -Xmx32m; final stack retains the conflicting application input as a regression.
+Second actual failure: Docker-injected proxy routed BusyBox loopback wget to an outbound proxy and returned 403.
+Fix: Compose web health uses wget -Y off for its local HTTP check; external proxy and TLS verification are unchanged.
+Third actual failure: verified HTTPS reached Caddy but its internal web upstream was routed through the injected external proxy (403).
+Isolated A/B proof with the same private CA: original Caddy returned 403; appending only internal NO_PROXY returned 200.
+Fix: edge appends web/loopback to existing NO_PROXY/no_proxy; HTTP_PROXY, HTTPS_PROXY and external TLS policy remain intact.
+
+Private synthetic fixture prepared without reading or changing root .env: passed
+Actual manage.py check accepts production configuration and relative secret files: passed
+Actual manage.py up --skip-build builds final images and returns after Compose --wait: passed
+Four services running; MySQL/server/web healthy; server nonroot; readonly key mounts: passed
+JDK_JAVA_OPTIONS=-Xms128m -Xmx384m regression: health probe explicitly sets -Xms8m -Xmx32m: passed
+Nginx loopback health bypasses outbound proxy while external proxy and TLS remain enabled: passed
+Final JAR hash matches deployed container 9617b0e1b6aea296551e0119fcdfe48fbd23f9d046b9fd74aac33707817ffddc: passed
+Single explicit BOM/CRLF config, relative credential files, process-only PORT/contact files and derived JDBC read correctly: passed
+HTTPS storefront served through Caddy and Nginx with private CA and matching SAN/SNI: passed
+TLS rejects wrong hostname/SNI; no verification bypass: passed
+Actual public production config disables development and exposes configured contact data: passed
+Development login rejected and anonymous admin/identity access denied: passed
+Fresh production database has no demonstration products or categories: passed
+Administrator bootstrap password loaded from relative _FILE authenticates over verified HTTPS: passed
+Authenticated administrator creates category/product/SKU; public catalogue/detail read persisted data: passed
+Authenticated admin route reads persisted product and public SKU omits internal cost: passed
+Database confirms one saved product and zero SMS, identity attempts, members or orders; no channel invocation: passed
+manage.py down completed; only isolated project volumes/network removed; preexisting containers unchanged: passed
+
+RESULT: PASSED
