@@ -6,6 +6,8 @@
 
 ## 配好变量后部署
 
+直接使用[逐项中文注释的配置文件](.env.example)，按[填写步骤](docs/configuration-start.md)补齐必填项即可。
+
 需要完整 **JDK 21**、**Node 22.12+**、**Python 3.11+**、**Docker 与 Compose 2.24+**。先将根目录`.env.example`复制为`.env`，按[配置清单](docs/configuration.md)填写站点、数据库、管理员、微信、短信、实名和数据加密参数，并放好商户密钥文件。官方接口已有默认值，站点API、素材、回调、小程序AppID及容器挂载由统一配置派生。
 
 ```bash

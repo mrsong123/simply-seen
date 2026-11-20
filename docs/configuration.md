@@ -1,5 +1,7 @@
 # 配置清单与自动读取
 
+直接填写请使用[逐项中文注释的生产配置模板](../.env.example)，按[配置填写步骤](configuration-start.md)操作。模板已标明92个参数的中文名称、用途、必填条件、默认值和获取位置。
+
 项目使用一份根配置文件。复制`.env.example`为`.env`，填写真实参数并放好密钥文件，然后执行`python3 scripts/manage.py check`及`python3 scripts/manage.py up`。Windows可用`py -3`替代`python3`。构建、前端API、小程序AppID、回调地址、Docker挂载由同一入口处理，不需要修改Java、Vue、Nginx或Compose源码。
 
 ## 读取规则
